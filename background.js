@@ -1,26 +1,90 @@
 chrome.runtime.onInstalled.addListener((details) => {
-    chrome.storage.local.get(['options_shown'], (res) => {
+    chrome.storage.local.get(['options_shown'], res => {
         if (!res['options_shown']) {
             chrome.runtime.openOptionsPage();
         }
     });
 });
 
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+    if (changeInfo.status !== 'complete') return;
+    let tabUrl = new URL(tab.url);
+    let data = null;
+    try {
+        data = await getDomainData(tabUrl.origin + '/');
+        if (data) {
+            Promise.resolve()
+                .then(() => executeScript(tabId, 'lib/js/authenticator.js'))
+                .then(() => executeScript(tabId, 'gitlab-mr-summary.js'))
+                .then(() => insertCss(tabId, 'gitlab-mr-summary.css'))
+        }
+    } catch (e) {
+        console.debug(e);
+    }
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message && message.command) {
         if (message.command === 'gitlabOauth') {
-            let redirectUri = 'https://nafdpejedjnkfnophlmfhacmcdajfdeh.chromiumapp.org',
-                appID = 'c84910d463b3870111cdf0adb70bebfbfcae7ea34c21f5bed21676e1b2e62d9f',
-                authUrl = `https://gitlab.heu.cz/oauth/authorize?client_id=${appID}&redirect_uri=${redirectUri}&response_type=token&state=YOUR_UNIQUE_STATE_HASH`;
-            gitlabAuthentication(authUrl)
-                .then(accessToken => sendResponse({data: accessToken}))
+            let url = new URL(sender.url);
+            if (url.pathname.indexOf('oauth/authorize') !== -1) {
+                // ignore endpoint oauth/authorize (prevent auth cycling)
+                sendResponse({authPending: true});
+                return false;
+            }
+            getDomainData(url.origin + '/')
+                .then(domainData => {
+                    if (domainData.authType === 'private') {
+                        return {
+                            token: domainData.token,
+                            type: domainData.authType,
+                        };
+                    } else {
+                        let redirectUri = chrome.identity.getRedirectURL(),
+                            appID = domainData.token,
+                            authUrl = `${domainData.url}/oauth/authorize?client_id=${appID}&redirect_uri=${redirectUri}&response_type=token&state=YOUR_UNIQUE_STATE_HASH`;
+                        return gitlabOAuthAuthentication(authUrl);
+                    }
+                })
+                .then(accessToken => sendResponse(accessToken))
                 .catch(message => sendResponse({message: message}));
         }
     }
     return true;
 });
 
-function gitlabAuthentication(authUrl) {
+function executeScript(tabId, filePath) {
+    return new Promise((resolve, reject) => {
+        chrome.tabs.executeScript(tabId, {file: filePath}, () => {
+            resolve()
+        });
+    });
+}
+
+function insertCss(tabId, filePath) {
+    return new Promise((resolve, reject) => {
+        chrome.tabs.insertCSS(tabId, {file: filePath}, () => {
+            resolve()
+        });
+    });
+}
+
+function getDomainData(domainUrl) {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.get(['domains'], result => {
+            if (result['domains']) {
+                for (let domain of result['domains']) {
+                    if (domain.url === domainUrl) {
+                        resolve(domain);
+                    }
+                }
+                reject('No data for domain: ' + domainUrl);
+            }
+        });
+    });
+}
+
+function gitlabOAuthAuthentication(authUrl) {
     let gitlabAccessTokenKey = 'gitlab-access-token_' + authUrl,
         validTimeTimestamp = 1000 * 60 * 60 * 24 * 2; // 2 days
 
@@ -34,21 +98,26 @@ function gitlabAuthentication(authUrl) {
                         url: authUrl,
                         interactive: true
                     },
-                    function (redirectUrl) {
+                    redirectUrl => {
+                        if (!redirectUrl) {
+                            reject(chrome.runtime.lastError);
+                            return;
+                        }
                         let url = new URL(redirectUrl),
                             urlParams = new URLSearchParams(url.hash.substr(1)),
-                            accessToken = urlParams.get('access_token');
+                            accessToken = urlParams.get('access_token'),
+                            expiresIn = urlParams.get('expires_in');
 
                         if (accessToken) {
                             chrome.storage.local.set(
                                 {
                                     [gitlabAccessTokenKey]: {
                                         token: accessToken,
-                                        expireAt: Date.now() + validTimeTimestamp
+                                        expireAt: Date.now() + expiresIn * 1000
                                     }
                                 });
 
-                            resolve(accessToken);
+                            resolve({token: accessToken, type: 'oauth',});
                         } else {
                             reject('Authentication failed.');
                         }

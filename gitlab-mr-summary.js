@@ -1,5 +1,3 @@
-import Authenticator from "./lib/authenticator";
-
 class GitlabMRSummary {
 
     /**
@@ -451,12 +449,16 @@ class GitlabMRSummary {
     async _sendRequest(url, n = 5) {
         this.requestCount++;
         try {
+            let headers = new Headers();
+            if (this.accessData.type === 'private') {
+                headers.append('Private-Token', this.accessData.token);
+            } else {
+                headers.append('Authorization', `Bearer ${this.accessData.token}`)
+            }
             return await fetch(
                 url,
                 {
-                    headers: {
-                        'Authorization': `Bearer ${this.accessData.accessToken}`,
-                    }
+                    headers: headers
                 }
             ).then(body => body.json());
         } catch (err) {
@@ -464,23 +466,30 @@ class GitlabMRSummary {
                 this.apiError = true;
                 throw err;
             }
-            console.warn(`try redownload (${n}) ${url}`);
+            await this._sleep(10);
+            console.warn(`download attempt (${n}) ${url}`);
             return await this._sendRequest(url, n - 1);
         }
     }
 
 }
 
-Authenticator.authenticate().then(data => {
+Authenticator.authenticate().then(accessData => {
+    let setDomain = (urls, domain) => {
+        return Object.keys(urls).reduce((result, i) => {
+            result[i] = urls[i].replace(':domain:', domain);
+            return result;
+        }, {});
+    }, urls = {
+        user: ':domain:/api/v4/user',
+        groups: ':domain:/api/v4/groups',
+        projects: ':domain:/api/v4/projects',
+        projectMRs: ':domain:/api/v4/projects/:project_id:/merge_requests?state=opened',
+        projectMRsParticipants: ':domain:/api/v4/projects/:project_id:/merge_requests/:merge_request_iid:/participants',
+        mergeRequestApprovals: ':domain:/api/v4/projects/:project_id:/merge_requests/:merge_request_iid:/approvals',
+    };
     (new GitlabMRSummary(
-        data,
-        {
-            user: 'https://gitlab.heu.cz/api/v4/user',
-            groups: 'https://gitlab.heu.cz/api/v4/groups',
-            projects: 'https://gitlab.heu.cz/api/v4/projects',
-            projectMRs: 'https://gitlab.heu.cz/api/v4/projects/:project_id:/merge_requests?state=opened',
-            projectMRsParticipants: 'https://gitlab.heu.cz/api/v4/projects/:project_id:/merge_requests/:merge_request_iid:/participants',
-            mergeRequestApprovals: 'https://gitlab.heu.cz/api/v4/projects/:project_id:/merge_requests/:merge_request_iid:/approvals',
-        }
+        accessData,
+        setDomain(urls, window.location.origin)
     )).run();
 }).catch(console.error);

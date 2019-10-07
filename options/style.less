@@ -1,0 +1,23 @@
+@import (less) "../lib/css/essentials.less";
+
+.c-redirect-url{
+    background: aqua;
+    padding: 0.3em 0.5em;
+    border-radius: 0.4em;
+    position: relative;
+    &:before {
+        content: 'Extension redirect url: ';
+    }
+}
+
+.c-copy-button {
+    margin-left: 1em;
+}
+
+input:not(checked) ~ .c-redirect-url {
+    display: none;
+}
+
+input:checked ~ .c-redirect-url {
+    display: block;
+}

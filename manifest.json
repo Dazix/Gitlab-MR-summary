@@ -1,0 +1,32 @@
+{
+    "name": "Gitlab MR summary",
+    "version": "1.0.1",
+    "description": "Gitlab MR summary",
+    "author": "David Šanda <sanda.david+gitlab-mr-summary@gmail.com>",
+    "manifest_version": 2,
+
+    "background": {
+        "scripts": [
+            "background.js"
+        ],
+        "persistent": false
+    },
+
+    "icons": {
+        "16": "images/icon16.png",
+        "32": "images/icon32.png",
+        "48": "images/icon48.png",
+        "128": "images/icon128.png"
+    },
+    "options_page": "options/page.html",
+
+    "permissions": [
+        "storage",
+        "tabs",
+        "identity"
+    ],
+    "optional_permissions": [
+        "http://*/",
+        "https://*/"
+    ]
+}
