@@ -1,5 +1,8 @@
 # Gitlab MR summary extension
 
+#### Chrome Store 
+https://chrome.google.com/webstore/detail/gitlab-mr-summary/gekiikmjljplpkcmheahicdcbblkafki
+
 ### Develop
 ```shell script
 docker build . -t gitlab-mr-summary
