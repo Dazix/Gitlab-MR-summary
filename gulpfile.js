@@ -26,6 +26,7 @@ gulp.task(
         '!node_modules/**/*',
         '!build/**/*',
         '!lib/css/**/*',
+        '!images/readme/**/*',
     ]).pipe(gulp.dest('build'))
 );
 
