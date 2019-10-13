@@ -50,17 +50,14 @@ class Options {
             let tokenInput = document.querySelector('.js-form-add__token');
             if (domainInput.checkValidity() && tokenInput.checkValidity()) {
                 let domainUrl = (new URL(formData.get('domain'))).toString();
-                this.permissionManager.check([], [domainUrl])
-                    .then(res => {
-                        if (res.origin.required.length) {
-                            return this.permissionManager.request([], res.origin.required);
-                        }
-                        return Promise.resolve();
-                    }).then(this._saveNewDomain.call(this, domainUrl, formData.get('auth_type'), formData.get('token')))
+                let saveDomain = () => {
+                    return this._saveNewDomain(domainUrl, formData.get('auth_type'), formData.get('token'));
+                };
+                this.permissionManager.request([], [domainUrl])
+                    .then(saveDomain.bind(this))
                     .then(this._init.bind(this))
                     .then(() => form.reset())
-                    .catch(err => console.debug(err))
-//                 form.reset();
+                    .catch(err => console.debug(err));
             }
         });
     }
@@ -70,8 +67,11 @@ class Options {
         form.addEventListener('click', evt => {
             if (evt.target.classList.contains('js-del-button')) {
                 evt.preventDefault();
+                let remove = () => {
+                    return this.permissionManager.remove([], [evt.target.value]);
+                };
                 this._deleteDomain(evt.target.value)
-                    .then(this.permissionManager.remove.call(this, [], [evt.target.value]))
+                    .then(remove.bind(this))
                     .then(this._init.bind(this));
             }
         });
