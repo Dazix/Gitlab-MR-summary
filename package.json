@@ -6,20 +6,18 @@
     "bugs": {
         "url": "https://github.com/Dazix/Gitlab-MR-summary/issues"
     },
-    "dependencies": {
-        "gulp4": "~4.0.2",
-        "gulp-uglify": "~3.0.0",
+    "devDependencies": {
+        "gulp": "~4.0.2",
         "gulp-zip": "~5.0.1",
         "less": "~3.10.3",
-        "uglify-es": "~3.3.9",
         "gulp-less": "~4.0.1",
-        "gulp-watch": "~5.0.0",
+        "gulp-watch": "~5.0.1",
         "del": "~5.1.0",
         "chrome-webstore-upload": "~0.2.2",
         "chalk": "~2.4.1"
     },
     "scripts": {
-        "develop": "gulp4 develop",
-        "pack": "gulp4 pack"
+        "develop": "gulp develop",
+        "pack": "gulp pack"
     }
 }
