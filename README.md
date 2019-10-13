@@ -9,13 +9,12 @@ Do you know the feeling when you start using a new service but want some feature
     - for [chrome](https://chrome.google.com/webstore/detail/gitlab-mr-summary/gekiikmjljplpkcmheahicdcbblkafki)
     - for firefox coming soon
 2. Set options of your Gitlab
-<img align="right" width="320" height="167" src="images/readme/settings.png">
-  
-- you can use 
-    - [private access token](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
-    - [OAuth2](https://docs.gitlab.com/ee/integration/oauth_provider.html)
-        - redirect URI displays when you check this option
-        - OAuth flow pops up when you first come to entered Gitlab domain
+    <img align="right" width="320" height="167" src="images/readme/settings.png">
+    - for auth you can use 
+        - [private access token](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
+        - [OAuth2](https://docs.gitlab.com/ee/integration/oauth_provider.html)
+            - redirect URI displays when you check this option
+            - OAuth flow pops up when you first come to entered Gitlab domain
 3. Go to your Gitlab domain
 <p align="center">
   <img width="640" height="400" src="images/readme/preview.png">
