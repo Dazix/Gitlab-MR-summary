@@ -18,7 +18,10 @@
         "48": "images/icon48.png",
         "128": "images/icon128.png"
     },
-    "options_page": "options/page.html",
+    "options_ui": {
+        "page": "options/page.html",
+        "open_in_tab": true
+    },
 
     "permissions": [
         "storage",
