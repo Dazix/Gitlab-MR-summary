@@ -10,7 +10,7 @@ Extension uses Gitlab API for getting all required data about projects and their
 ### Setup
 1. Get extension for your browser
     - for [chrome](https://chrome.google.com/webstore/detail/gitlab-mr-summary/gekiikmjljplpkcmheahicdcbblkafki)
-    - for [firefox](https://addons.mozilla.org/cs/firefox/addon/gitlab-mr-summary/)
+    - for [firefox](https://addons.mozilla.org/en-US/firefox/addon/gitlab-mr-summary/)
 2. Set options of your Gitlab
     <img align="right" width="320" height="167" src="images/readme/settings.png">
     - for auth you can use 
