@@ -7,7 +7,7 @@ Do you know the feeling when you start using a new service but want some feature
 ### Setup
 1. Get extension for your browser
     - for [chrome](https://chrome.google.com/webstore/detail/gitlab-mr-summary/gekiikmjljplpkcmheahicdcbblkafki)
-    - for firefox coming soon
+    - for [firefox](https://addons.mozilla.org/cs/firefox/addon/gitlab-mr-summary/)
 2. Set options of your Gitlab
     <img align="right" width="320" height="167" src="images/readme/settings.png">
     - for auth you can use 
