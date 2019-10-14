@@ -2,7 +2,10 @@
 
 # Gitlab MR summary extension
 
-Do you know the feeling when you start using a new service but want some features from the old one? I had a feeling when we started using Gitlab in HeurekaDevs after some time when we were using Bitbucket Stash and found that Gitlab had no summary of waiting MRs for codereview, as Stash has. Yes, there are TODOs but they behave strangely and illogically so I decided to write this extension.
+Do you know the feeling when you start using a new service but want some features from the old one? I had this feeling when we started using Gitlab in HeurekaDevs after some time when we were using Bitbucket Stash and found that Gitlab has no summary of waiting MRs for codereview, as Stash had. Yes, there are TODOs but they behave strangely and illogically so I decided to write this extension.
+
+### How it works
+Extension uses Gitlab API for getting all required data about projects and theirs MR requests and participants. Gitlab API is read/write and unfortunetly you can't restrict your tokens only for read access. But don't worry **extension only reads data**.
 
 ### Setup
 1. Get extension for your browser
