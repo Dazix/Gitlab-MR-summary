@@ -186,6 +186,7 @@ class GitlabMRSummary {
                 authorImage.src = request.author.avatar_url;
                 authorImage.alt = 'Author avatar';
                 authorImage.classList.add('author-avatar');
+                authorImage.title = request.author.name;
                 firstColCont.appendChild(authorImage);
                 item.appendChild(firstColCont);
 

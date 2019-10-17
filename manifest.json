@@ -1,6 +1,6 @@
 {
     "name": "Gitlab MR summary",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "Gitlab MR summary",
     "author": "David Šanda <sanda.david+gitlab-mr-summary@gmail.com>",
     "manifest_version": 2,
