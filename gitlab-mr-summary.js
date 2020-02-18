@@ -478,32 +478,69 @@ class GitlabMRSummary {
 
 class Downloader {
     _gitlabAccessData;
-    
+
     constructor(gitlabAccessData) {
         this._gitlabAccessData = gitlabAccessData;
-        
+
         /** @type Data */
         this._downloadedData = new Data();
-        
+
         this.urls = new GitlabApiUrls();
     }
-    
+
     getData() {
         Promise.all([
-            this.#loadUsersData(),
-            this.#loadProjects,
-        ]).then()
+            this._loadUsersData(),
+            this._loadProjects(),
+        ])
+            .then(values => this._loadMergeRequests(values[1]))
+            .then(values => {
+                console.log(values);
+            });
     }
 
-    async #loadUsersData() {
-        return Promise.all([this.#getActualUser(), this.#getUsersGroups()])
+    runQueue(queue, concurrency = 5) {
+        let results = {};
+        let _queueToExecute = [];
+        let runTask = async () => {
+            let taskArr = _queueToExecute.shift();
+            if (taskArr) {
+                let [key, task] = taskArr;
+                results[key] = await task();
+                await runTask();
+            }
+        };
+        for (let [key, task] of Object.entries(queue)) {
+            _queueToExecute.push([key, task]);
+        }
+        let runTaskQueue = [];
+        for (let i = 0; i < concurrency; i++) {
+            runTaskQueue.push(runTask());
+        }
+
+        return Promise.all(runTaskQueue).then(() => results);
+    }
+
+    async _loadMergeRequests(projects) {
+        projects = projects.filter(project => project.merge_requests_enabled);
+
+        let requests = [];
+        for (let projectID of projects.map(project => project.id)) {
+            requests.push(async () => await this._sendRequest(this.urls.projectMRs.replace(':project_id:', projectID)));
+        }
+
+        return [].concat(...Object.values(await this.runQueue(requests)));
+    }
+
+    async _loadUsersData() {
+        return Promise.all([this._getActualUser(), this._getUsersGroups()])
             .then(values => {
                 this._downloadedData.user.id = values[0].id;
                 this._downloadedData.user.groupsId = values[1].map(group => group.id);
             });
     }
 
-    async #loadProjects() {
+    async _loadProjects() {
         let page = 1,
             perPage = 10,
             maxTries = 50,
@@ -516,7 +553,7 @@ class Downloader {
         do {
             url.searchParams.set('page', page.toString());
 
-            let ret = await this.#sendRequest(url.href);
+            let ret = await this._sendRequest(url.href);
             projects = projects.concat(ret);
 
             await this._sleep(10);
@@ -524,15 +561,16 @@ class Downloader {
 
             page++;
         } while (page < maxTries && loadMoreProjects);
-        
+
         return projects;
     }
 
     /**
      * @returns Promise<Object>
+     * @private
      */
-    #getActualUser() {
-        return this.#sendRequest(this.urls.user);
+    _getActualUser() {
+        return this._sendRequest(this.urls.user);
     }
 
     /**
@@ -541,12 +579,12 @@ class Downloader {
      *
      * @see https://docs.gitlab.com/ee/api/members.html for access levels
      */
-    #getUsersGroups() {
+    _getUsersGroups() {
         // 30 = developer access
-        return this.#sendRequest(this.urls.groups + '?min_access_level=30');
+        return this._sendRequest(this.urls.groups + '?min_access_level=30');
     }
 
-    async #sendRequest(url, n = 5) {
+    async _sendRequest(url, n = 5) {
         try {
             let headers = new Headers();
             if (this._gitlabAccessData.type === 'private') {
@@ -554,19 +592,18 @@ class Downloader {
             } else {
                 headers.append('Authorization', `Bearer ${this._gitlabAccessData.token}`)
             }
-            return await fetch(
+            let response = await fetch(
                 url,
-                {
-                    headers: headers
-                }
-            ).then(body => body.json());
+                {headers: headers}
+            );
+            return await response.json();
         } catch (err) {
             if (n === 1) {
                 throw err;
             }
             await this._sleep(10);
             console.warn(`download attempt (${n}) ${url}`);
-            return await this.#sendRequest(url, n - 1);
+            return await this._sendRequest(url, n - 1);
         }
     }
 
@@ -576,7 +613,7 @@ class Downloader {
     _sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
-    
+
 }
 
 class GitlabApiUrls {
@@ -594,11 +631,15 @@ class Data {
     /** @type {{string: MergeRequest}} */
     #mergeRequests = {};
 
+    constructor() {
+        this.user = new User();
+    }
+
     /**
      * @param {MergeRequest} mergeRequestObj
      */
     set mergeRequest(mergeRequestObj) {
-        this.#mergeRequests[this.#getMergeRequestUniqueId(mergeRequestObj)] = mergeRequestObj;
+        this.#mergeRequests[this._getMergeRequestUniqueId(mergeRequestObj)] = mergeRequestObj;
     }
 
     /**
@@ -613,7 +654,7 @@ class Data {
      */
     get usersMergeRequests() {
         let filterFunction = id => id === this.user.id;
-        return this.#filterMergeRequests(filterFunction)
+        return this._filterMergeRequests(filterFunction)
     }
 
     /**
@@ -621,24 +662,24 @@ class Data {
      */
     get nonUsersMergeRequests() {
         let filterFunction = id => id !== this.user.id;
-        return this.#filterMergeRequests(filterFunction)
+        return this._filterMergeRequests(filterFunction)
     }
 
     /**
      * @param {function} filterFunction
      * @return {{string: MergeRequest}}
      */
-    #filterMergeRequests(filterFunction) {
+    _filterMergeRequests(filterFunction) {
         return Object.keys(this.#mergeRequests)
             .filter(mrId => filterFunction(this.#mergeRequests[mrId].author.id))
-            .reduce((res, key) => Object.assign(res, { [key]: this.#mergeRequests[key] }), {});
+            .reduce((res, key) => Object.assign(res, {[key]: this.#mergeRequests[key]}), {});
     }
 
     /**
      * @param {MergeRequest} mergeRequest
      * @return {string}
      */
-    #getMergeRequestUniqueId(mergeRequest) {
+    _getMergeRequestUniqueId(mergeRequest) {
         return mergeRequest.project.nameWithNamespace + mergeRequest.id;
     }
 }
@@ -647,10 +688,10 @@ class MergeRequest {
 
     /** @type {User} */
     author;
-    
+
     /** @type {number} */
     id;
-    
+
     /** @type {URL} */
     webUrl;
 
@@ -697,15 +738,15 @@ class Project {
 
 
 class List {
-    
+
     render() {
-        
+
     }
-    
+
     update() {
-        
+
     }
-    
+
 }
 
 
@@ -726,5 +767,6 @@ Authenticator.authenticate().then(accessData => {
     (new GitlabMRSummary(
         accessData,
         setDomain(urls, window.location.origin)
-    )).run();
+    ));
+    let d = new Downloader(accessData).getData()
 }).catch(console.error);
