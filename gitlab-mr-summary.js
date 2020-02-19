@@ -493,9 +493,12 @@ class Downloader {
             this._loadUsersData(),
             this._loadProjects(),
         ])
-            .then(values => this._loadMergeRequests(values[1]))
-            .then(values => {
-                console.log(values);
+            .then(data => this._loadMergeRequests(data[1]))
+            .then(data => this._enrichMergeRequestsByParticipants(data))
+            .then(data => this._enrichMergeRequestsParticipantsByApprovalsAndApprovers(data))
+            .then(data => this._removeNonRelevantMergeRequests(data))
+            .then(data => {
+                console.log(data);
             });
     }
 
@@ -521,15 +524,145 @@ class Downloader {
         return Promise.all(runTaskQueue).then(() => results);
     }
 
-    async _loadMergeRequests(projects) {
-        projects = projects.filter(project => project.merge_requests_enabled);
-
+    /**
+     * @param {MergeRequest[]} mergeRequests
+     * @return {Promise<MergeRequest[]>}
+     * @private
+     */
+    async _enrichMergeRequestsParticipantsByApprovalsAndApprovers(mergeRequests) {
         let requests = [];
-        for (let projectID of projects.map(project => project.id)) {
+        for (let mergeRequest of mergeRequests) {
+            requests.push(async () => 
+                this._sendRequest(
+                    this.urls.mergeRequestApprovals
+                        .replace(':project_id:', mergeRequest.project.id.toString())
+                        .replace(':merge_request_iid:', mergeRequest.iid.toString())
+                ).then(approvalsData => {
+                    mergeRequest.approvers = approvalsData.approvers.map(item => {
+                        let approver = new User();
+                        approver.id = item.user.id;
+                        approver.name = item.user.name;
+                        approver.avatarUrl = new URL(item.user.avatar_url);
+                        return approver
+                    });
+                    mergeRequest.approverGroupsId = approvalsData.approver_groups.map(item => item.group.id);
+                    if (approvalsData.approved_by.length) {
+                        for (let participant of mergeRequest.participants) {
+                            for (let data of approvalsData.approved_by) {
+                                if (participant.id === data.user.id) {
+                                    participant.approved = true;
+                                    if (participant.id === this._downloadedData.user.id) {
+                                        mergeRequest.approvedByUser = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                })
+            );
+        }
+        
+        await this.runQueue(requests);
+        
+        return mergeRequests;
+    }
+
+    /**
+     * @param {MergeRequest[]} mergeRequests
+     * @return {Promise<MergeRequest[]>}
+     * @private
+     */
+    async _removeNonRelevantMergeRequests(mergeRequests) {
+        let filteredMergeRequests = [];
+        for (let request of mergeRequests) {
+                // is user owner of merge request
+            if (request.author.id === this._downloadedData.user.id
+                // is user belongs to participants
+                || request.participants
+                    .filter(participant => participant.id === this._downloadedData.user.id)
+                    .length > 0
+                ||
+                // is user belongs to approvers
+                request.approvers
+                    .filter(approver => approver.id === this._downloadedData.user.id)
+                    .length > 0
+                ||
+                // is user belongs to any approving group
+                request.approverGroupsId
+                    .filter(groupId => this._downloadedData.user.groupsId.indexOf(groupId) !== -1)
+                    .length > 0 
+            ) {
+                filteredMergeRequests.push(request);
+            }
+        }
+        
+        return filteredMergeRequests;
+    }
+
+    /**
+     * @param {MergeRequest[]} mergeRequests
+     * @return {Promise<MergeRequest[]>}
+     * @private
+     */
+    async _enrichMergeRequestsByParticipants(mergeRequests) {
+        let requests = [];
+        for (let mergeRequest of mergeRequests) {
+            requests.push(async () => await this._sendRequest(
+                this.urls.projectMRsParticipants
+                    .replace(':project_id:', mergeRequest.project.id.toString())
+                    .replace(':merge_request_iid:', mergeRequest.iid.toString())
+                ).then(data => {
+                    mergeRequest.participants = data.map(participant => {
+                        let user = new User();
+                        user.id = participant.id;
+                        user.name = participant.name;
+                        user.avatarUrl = participant.avatar_url;
+
+                        return user;
+                    })
+                }));
+//                .then(data => data.filter(participant => participant.id !== 38)) // TODO remove dummy group owner
+        }
+        
+        await this.runQueue(requests);
+        
+        return mergeRequests;
+    }
+
+    async _loadMergeRequests(projects) {
+        let projectsObj = {};
+        
+        for (let project of projects) {
+            if (project.merge_requests_enabled) {
+                projectsObj[project.id] = project;
+            }
+        }
+        
+        let requests = [];
+        for (let projectID of Object.keys(projectsObj)) {
             requests.push(async () => await this._sendRequest(this.urls.projectMRs.replace(':project_id:', projectID)));
         }
 
-        return [].concat(...Object.values(await this.runQueue(requests)));
+        return [].concat(...Object.values(await this.runQueue(requests))).map(rawMR => {
+            let mrObject = new MergeRequest();
+            mrObject.author.id = rawMR.author.id;
+            mrObject.author.name = rawMR.author.name;
+            mrObject.author.avatarUrl = new URL(rawMR.author.avatar_url);
+            mrObject.project.id = rawMR.project_id;
+            mrObject.project.nameWithNamespace = projectsObj[rawMR.project_id].name_with_namespace;
+            mrObject.project.pathWithNamespace = projectsObj[rawMR.project_id].path_with_namespace;
+
+            mrObject.iid = rawMR.iid;
+            mrObject.webUrl = new URL(rawMR.web_url);
+            mrObject.workInProgress = rawMR.work_in_progress;
+            mrObject.createdAt = new Date(rawMR.created_at);
+            mrObject.sourceBranch = rawMR.source_branch;
+            mrObject.targetBranch = rawMR.target_branch;
+            mrObject.title = rawMR.title;
+            mrObject.commentsSum = rawMR.title;
+
+            return mrObject;
+        });
     }
 
     async _loadUsersData() {
@@ -592,6 +725,9 @@ class Downloader {
             } else {
                 headers.append('Authorization', `Bearer ${this._gitlabAccessData.token}`)
             }
+            
+            headers.append('User-Agent', 'GitlabMRSummary-BrowserExtension');
+            
             let response = await fetch(
                 url,
                 {headers: headers}
@@ -628,32 +764,18 @@ class GitlabApiUrls {
 class Data {
     /** @type {User} */
     user;
-    /** @type {{string: MergeRequest}} */
-    #mergeRequests = {};
+    /** @type {MergeRequest[]} */
+    mergeRequests;
 
     constructor() {
         this.user = new User();
     }
 
     /**
-     * @param {MergeRequest} mergeRequestObj
-     */
-    set mergeRequest(mergeRequestObj) {
-        this.#mergeRequests[this._getMergeRequestUniqueId(mergeRequestObj)] = mergeRequestObj;
-    }
-
-    /**
-     * @return {{string: MergeRequest}}
-     */
-    get mergeRequests() {
-        return this.#mergeRequests
-    }
-
-    /**
      * @return {{string: MergeRequest}}
      */
     get usersMergeRequests() {
-        let filterFunction = id => id === this.user.id;
+        let filterFunction = mr => mr.author.id === this.user.id;
         return this._filterMergeRequests(filterFunction)
     }
 
@@ -661,7 +783,7 @@ class Data {
      * @return {{string: MergeRequest}}
      */
     get nonUsersMergeRequests() {
-        let filterFunction = id => id !== this.user.id;
+        let filterFunction = mr => mr.author.id !== this.user.id;
         return this._filterMergeRequests(filterFunction)
     }
 
@@ -670,9 +792,9 @@ class Data {
      * @return {{string: MergeRequest}}
      */
     _filterMergeRequests(filterFunction) {
-        return Object.keys(this.#mergeRequests)
-            .filter(mrId => filterFunction(this.#mergeRequests[mrId].author.id))
-            .reduce((res, key) => Object.assign(res, {[key]: this.#mergeRequests[key]}), {});
+        return Object.values(this.mergeRequests)
+            .filter(mr => filterFunction(mr))
+            //.reduce((res, key) => Object.assign(res, {[key]: this.mergeRequests[key]}), {});
     }
 
     /**
@@ -690,7 +812,7 @@ class MergeRequest {
     author;
 
     /** @type {number} */
-    id;
+    iid;
 
     /** @type {URL} */
     webUrl;
@@ -699,22 +821,43 @@ class MergeRequest {
     title;
 
     /** @type {string} */
-    source_branch;
+    sourceBranch;
 
     /** @type {string} */
-    target_branch;
+    targetBranch;
 
     /** @type {number} */
-    comments_sum;
+    commentsSum;
 
-    /** @type {string} */
-    created_at;
+    /** @type {Date} */
+    createdAt;
 
     /** @type {Project} */
     project;
 
     /** @type {User[]} */
     participants;
+
+    /** @type {User[]} */
+    approvers;
+
+    /** @type {Number[]} */
+    approverGroupsId;
+    
+    /** @type {boolean} */
+    workInProgress;
+    
+    /** @type {boolean} */
+    approvedByUser;
+    
+    constructor() {
+        this.author = new User();
+        this.project = new Project();
+    }
+    
+    get uniqueId() {
+        return `${this.project.pathWithNamespace}-${this.iid}`
+    }
 
 }
 
@@ -727,11 +870,15 @@ class User {
     name;
     /** @type {number[]} */
     groupsId;
+    /** @type {boolean} */
+    approved;
 }
 
 class Project {
     /** @type {number} */
     id;
+    /** @type {string} */
+    pathWithNamespace;
     /** @type {string} */
     nameWithNamespace;
 }
