@@ -41,7 +41,7 @@ gulp.task('less',
     () => gulp.src(
         [
             '**/*.less',
-            '!lib/css/**/*',
+            //'!lib/css/**/*',
             '!node_modules/**/*',
         ])
         .pipe(less({strictMath: true}))
