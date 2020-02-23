@@ -13,9 +13,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     try {
         data = await getDomainData(tabUrl.origin + '/');
         if (data) {
-            Promise.resolve()
-                .then(() => executeScript(tabId, 'lib/js/authenticator.js'))
+            await executeScript(tabId, 'lib/js/authenticator.js')
                 .then(() => executeScript(tabId, 'gitlab-mr-summary.js'))
+                .then(() => insertCss(tabId, 'lib/css/essentials.css'))
                 .then(() => insertCss(tabId, 'gitlab-mr-summary.css'))
         }
     } catch (e) {
