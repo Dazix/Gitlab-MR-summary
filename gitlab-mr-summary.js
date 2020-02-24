@@ -24,13 +24,23 @@ class GitlabMRSummary {
 
     async run() {
         this._createSpinnerIcon();
-        /** @type Data */
-        let data = await this.#storage.get(this.#storageKey);
-        if (!data || data.age < new Date() - 1000 * 60 * 5) {
+        
+        let loadData = async () => {
             data = await this.#downloader.getData();
             await this.#storage.set(this.#storageKey, data.getAsSimpleDataObject());
+            
+            return data;
+        };
+        
+        /** @type Data */
+        let data = await this.#storage.get(this.#storageKey);
+        if (!data) {
+            data = await loadData();
         } else {
             data = new Data(data);
+            if (data.age < new Date() - 1000 * 60 * 5) {
+                data = await loadData();
+            }
         }
         
         data.mergeRequests = this._removeParticipantsFromMergeRequestsByIds(data.mergeRequests, [data.user.id]);
@@ -502,7 +512,7 @@ class Data {
      */
     getAsSimpleDataObject() {
         return {
-            age: this.age ? this.age.toDateString() : this.age,
+            age: this.age ? this.age.toUTCString() : this.age,
             user: this.user ? this.user.getAsSimpleDataObject() : this.user,
             mergeRequests: this.mergeRequests ? this.mergeRequests.map(mergeRequest => mergeRequest.getAsSimpleDataObject()) : this.mergeRequests,
         };
@@ -591,7 +601,7 @@ class MergeRequest {
             sourceBranch: this.sourceBranch,
             targetBranch: this.targetBranch,
             commentsSum: this.commentsSum,
-            createdAt: this.createdAt.toDateString(),
+            createdAt: this.createdAt.toUTCString(),
             project: this.project.getAsSimpleDataObject(),
             participants: this.participants.map(participant => participant.getAsSimpleDataObject()),
             approvers: this.approvers.map(approver => approver.getAsSimpleDataObject()),
@@ -678,11 +688,14 @@ class HTMLContent {
      */
     renderList(data) {
         return `
-            <div class="c-dropdown js-dropdown scope-essentials-v1.50.0 dropdown-menu hidden">
+            <div class="c-dropdown js-dropdown scope-essentials-v1.50.0 dropdown-menu dropdown-menu-right hidden">
+                <div class="c-info e-note">
+                    Last update: ${data.age.toLocaleTimeString()} ${data.age.toDateString()} <button class="c-refresh-btn u-gamma js-refresh-button">&#8635;</button>
+                </div>
                 <div class="c-dropdown__tab">
-                    <h3 class="e-heading u-bold u-beta">To review</h3>
+                    <h3 class="e-heading u-bold u-gamma">To review</h3>
                     ${this._getSimpleMRsList(Data.sortByAlreadyApprovedAndByDate(data.nonUsersMergeRequests))}
-                    <h3 class="e-heading u-bold u-beta">Created</h3>
+                    <h3 class="e-heading u-bold u-gamma">Created</h3>
                     ${this._getSimpleMRsList(Data.sortByDate(data.usersMergeRequests))}
                 </div>
             </div>

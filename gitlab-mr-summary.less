@@ -1,4 +1,6 @@
 .scope-gitlab-mr-summary {
+    @import "lib/css/utils.less";
+    
     .c-dropdown {
         max-width: 720px;
         width: 720px;
@@ -19,6 +21,19 @@
             background: #555;
         }
     }
+        .c-dropdown__tab {
+            margin-top: 0;
+        }
+    
+    .c-info {
+        position: absolute;
+        right: .7em;
+        display: flex;
+        align-items: center;
+    }
+        .c-refresh-btn {
+            display: inline-block;
+        }
 
     .c-spinner-icon {
         path, rect {
@@ -92,20 +107,5 @@
             width: 1.3em;
             height: 1.3em;
         }
-    }
-
-    .e-link {
-        padding: 0 !important;
-        text-decoration: underline !important;
-        color: cornflowerblue !important;
-        width: fit-content !important;
-        &:hover {
-            background: transparent !important;
-        }
-    }
-    
-    .e-note {
-        color: darkgray;
-        display: block;
     }
 }
