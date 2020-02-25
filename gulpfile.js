@@ -2,71 +2,97 @@ const gulp = require('gulp');
 const zip = require('gulp-zip');
 const less = require('gulp-less');
 const del = require('del');
+const rollup = require('rollup');
+const babel = require('rollup-plugin-babel');
 
-gulp.task('clean',
-    () => del([
-        'extension.zip',
-        'build/**/*',
-    ])
-);
+const buildJs = (inputFile, outputFile) => {
+    return async cb => {
+        let bundle = await rollup.rollup({
+            input: inputFile,
+            plugins: [
+                babel({
+                    exclude: 'node_modules/**', // only transpile our source code
+                }),
+            ],
+        });
 
-gulp.task(
-    'moveSource',
-    () => gulp.src([
-        'manifest.json',
-        '**/*.css',
-        '**/*.html',
-        '**/*.png',
-        '**/*.svg',
-        '**/*.woff2',
-        '**/*.js',
-        '!**/*.less',
-        '!gulpfile.js',
-        '!deploy.js',
-        '!node_modules/**/*',
-        '!build/**/*',
-        '!lib/css/**/*',
-        '!images/readme/**/*',
-    ]).pipe(gulp.dest('build'))
-);
+        await bundle.write({
+            file: outputFile,
+            format: 'iife',
+            sourcemap: true,
+        });
 
-gulp.task(
-    'makeZip',
-    () => gulp.src('build/**/*')
-        .pipe(zip('extension.zip'))
-        .pipe(gulp.dest('.'))
-);
+        cb();
+    };
+};
 
-gulp.task('less',
-    () => gulp.src(
-        [
-            '**/*.less',
-            //'!lib/css/**/*',
-            '!node_modules/**/*',
-        ])
-        .pipe(less({strictMath: true}))
-        .on('error', swallowError)
-        .pipe(gulp.dest('./'))
-);
-
-gulp.task('watch-less', () => 
-    gulp.watch('**/*.less', gulp.series('less'))
-);
+const buildLess = (inputs, output) => {
+    return cb => {
+        gulp.src(inputs)
+            .pipe(less({strictMath: true}))
+            .on('error', swallowError)
+            .pipe(gulp.dest(output));
+        cb();
+    };
+};
 
 function swallowError(error) {
     console.log(error);
     this.emit('end')
 }
 
-gulp.task(
-    'pack',
-    gulp.series(
-        'clean',
-        'less',
-        'moveSource',
-        'makeZip'
-    )
-);
+const clean = () => { return del([
+    'extension.zip',
+    'build/**/*',
+])};
+exports.clean = clean; 
 
-gulp.task('develop', gulp.series('less', 'watch-less'));
+const moveSource = () => {
+    return gulp.src([
+        'manifest.json',
+        'options/**/*.html',
+        'options/**/*.js',
+        'images/**/*',
+        '!images/readme/**/*',
+        'src/**/*.js'
+    ]).pipe(gulp.dest('./build'));
+};
+exports.moveSource = moveSource;
+
+const jsBuild = () => {
+    return gulp.parallel(
+        buildJs('./src/js/gitlab-mr-summary.js', './build/gitlab-mr-summary.js'),
+        buildJs('./src/js/background.js', './build/background.js'),
+    );
+};
+exports.jsBuild = jsBuild;
+
+const makeZip = () => {
+    return gulp.src('build/**/*')
+        .pipe(zip('extension.zip'))
+        .pipe(gulp.dest('.'));
+};
+exports.makeZip = makeZip;
+
+const lessBuild = () => {
+    return gulp.parallel(
+        buildLess('./src/css/gitlab-mr-summary.less', './build'),
+        buildLess('./options/style.less', './build/options'),
+    );
+};
+exports.lessBuild = lessBuild; 
+
+const watchLess = () => {
+    return gulp.watch('**/*.less', gulp.series(lessBuild));
+};
+exports.watchLess = watchLess;
+
+exports.pack = gulp.series(
+        clean,
+        lessBuild,
+        moveSource,
+        makeZip
+    );
+
+exports.develop = gulp.series(lessBuild, watchLess);
 

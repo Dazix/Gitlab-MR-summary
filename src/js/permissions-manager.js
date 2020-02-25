@@ -1,4 +1,4 @@
-var PermissionsManagerClass = PermissionsManagerClass || class PermissionsManagerClass {
+export default class PermissionsManagerClass {
 
     /**
      * @param {string[]} permissions
@@ -114,6 +114,4 @@ var PermissionsManagerClass = PermissionsManagerClass || class PermissionsManage
         });
     }
 };
-
-var PermissionsManager = PermissionsManager || new PermissionsManagerClass();
 
