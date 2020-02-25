@@ -1,4 +1,4 @@
-class Authenticator {
+export default class Authenticator {
 
     /**
      * @returns Promise<{{ token: String, type: String }}>

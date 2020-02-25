@@ -1,4 +1,4 @@
-import User from './lib/js/user'
+import User from './user'
 
 
 chrome.runtime.onInstalled.addListener((details) => {
@@ -18,9 +18,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     try {
         data = await getDomainData(tabUrl.origin + '/');
         if (data) {
-            await executeScript(tabId, 'lib/js/authenticator.js')
-                .then(() => executeScript(tabId, 'gitlab-mr-summary.js'))
-                .then(() => insertCss(tabId, 'lib/css/essentials.css'))
+            await executeScript(tabId, 'gitlab-mr-summary.js')
                 .then(() => insertCss(tabId, 'gitlab-mr-summary.css'))
         }
     } catch (e) {
