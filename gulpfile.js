@@ -41,30 +41,26 @@ function swallowError(error) {
     this.emit('end')
 }
 
-const clean = () => { return del([
-    'extension.zip',
-    'build/**/*',
-])};
-exports.clean = clean; 
-
-const moveSource = () => {
-    return gulp.src([
-        'manifest.json',
-        'options/**/*.html',
-        'options/**/*.js',
-        'images/**/*',
-        '!images/readme/**/*',
-        'src/**/*.js'
-    ]).pipe(gulp.dest('./build'));
+const clean = () => {
+    return del([
+        'extension.zip',
+        'build/**/*',
+    ])
 };
+exports.clean = clean;
+
+const moveSource = gulp.parallel(
+    function copyManifest() {return gulp.src(['manifest.json']).pipe(gulp.dest('./build'))},
+    function copyOptions() {return gulp.src(['options/**/*.html', 'options/**/*.js',]).pipe(gulp.dest('./build/options'))},
+    function copyImages() {return gulp.src(['images/**/*', '!images/readme/**/*',]).pipe(gulp.dest('./build/images'))},
+);
 exports.moveSource = moveSource;
 
-const jsBuild = () => {
-    return gulp.parallel(
-        buildJs('./src/js/gitlab-mr-summary.js', './build/gitlab-mr-summary.js'),
-        buildJs('./src/js/background.js', './build/background.js'),
-    );
-};
+const jsBuild = gulp.parallel(
+    buildJs('./src/js/gitlab-mr-summary.js', './build/gitlab-mr-summary.js'),
+    buildJs('./src/js/background.js', './build/background.js'),
+    function copyOriginalJs() {return gulp.src(['src/**/*.js']).pipe(gulp.dest('./build/dist'))},
+);
 exports.jsBuild = jsBuild;
 
 const makeZip = () => {
@@ -74,25 +70,29 @@ const makeZip = () => {
 };
 exports.makeZip = makeZip;
 
-const lessBuild = () => {
-    return gulp.parallel(
-        buildLess('./src/css/gitlab-mr-summary.less', './build'),
-        buildLess('./options/style.less', './build/options'),
-    );
-};
-exports.lessBuild = lessBuild; 
+const lessBuild = gulp.parallel(
+    buildLess('./src/css/gitlab-mr-summary.less', './build'),
+    buildLess('./options/style.less', './build/options'),
+);
+exports.lessBuild = lessBuild;
 
-const watchLess = () => {
-    return gulp.watch('**/*.less', gulp.series(lessBuild));
-};
-exports.watchLess = watchLess;
+function watch(done) {
+    gulp.watch(['**/*.less', '!build/**/*', '!node_modules/**/*'], lessBuild);
+    gulp.watch(['**/*.js', '!build/**/*', '!node_modules/**/*'], jsBuild);
+    gulp.watch(['**/*', '!**/*.js', '!**/*.less', '!build/**/*', '!node_modules/**/*'], moveSource);
+    done();
+}
+exports.watch = watch;
 
 exports.pack = gulp.series(
         clean,
-        lessBuild,
-        moveSource,
+        gulp.parallel(
+            lessBuild,
+            jsBuild,
+            moveSource,
+        ),
         makeZip
     );
 
-exports.develop = gulp.series(lessBuild, watchLess);
+exports.develop = gulp.series(clean, gulp.parallel(lessBuild, jsBuild, moveSource), watch);
 
