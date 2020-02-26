@@ -1,4 +1,4 @@
-export default class PermissionsManagerClass {
+export default class PermissionsManager {
 
     /**
      * @param {string[]} permissions

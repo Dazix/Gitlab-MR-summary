@@ -1,8 +1,10 @@
+import PermissionsManager from "../js/permissions-manager.js";
+
 class Options {
 
     /**
      * @param storage
-     * @param {PermissionsManagerClass} permissionManager
+     * @param {PermissionsManager} permissionManager
      */
     constructor(storage, permissionManager) {
         this.storage = storage;
@@ -158,6 +160,6 @@ class Options {
 
 }
 
-let options = new Options(chrome.storage.local, PermissionsManager);
+new Options(chrome.storage.local, new PermissionsManager());
 
 chrome.storage.local.set({options_shown: true});
