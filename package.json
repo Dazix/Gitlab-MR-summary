@@ -23,6 +23,7 @@
     },
     "scripts": {
         "develop": "gulp develop",
+        "build": "gulp build",
         "pack": "gulp pack"
     }
 }

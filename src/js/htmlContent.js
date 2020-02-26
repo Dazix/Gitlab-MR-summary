@@ -1,3 +1,5 @@
+import Data from "./data";
+
 export default class HTMLContent {
 
     /**
