@@ -1,23 +1,44 @@
 @import (less) "../src/css/essentials.less";
 
-.c-redirect-url{
-    background: aqua;
-    padding: 0.3em 0.5em;
-    border-radius: 0.4em;
-    position: relative;
-    &:before {
-        content: 'Extension redirect url: ';
+.scope-gitlab-mr-summary {
+        
+    .c-redirect-url{
+        background: aqua;
+        padding: 0.3em 0.5em;
+        border-radius: 0.4em;
+        position: relative;
+        &:before {
+            content: 'Extension redirect url: ';
+        }
     }
-}
-
-.c-copy-button {
-    margin-left: 1em;
-}
-
-input:not(checked) ~ .c-redirect-url {
-    display: none;
-}
-
-input:checked ~ .c-redirect-url {
-    display: block;
+    
+    .c-copy-button {
+        margin-left: 1em;
+    }
+    
+    input:not(checked) ~ .c-redirect-url {
+        display: none;
+    }
+    
+    input:checked ~ .c-redirect-url {
+        display: block;
+    }
+    
+    .c-actual-domains {}
+        .c-actual-domains__buttons {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: start;
+            margin-top: 0;
+        }
+            .c-actual-domains__button {
+                margin-top: 0;
+                &:not(:last-child) {
+                    margin-right: .4em;
+                }
+            }
+            
+            .c-actual-domains__cache-time {
+                width: 4.5em;
+            }
 }

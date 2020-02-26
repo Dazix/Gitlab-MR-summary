@@ -40,12 +40,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         return {
                             token: domainData.token,
                             type: domainData.authType,
+                            data: domainData,
                         };
                     } else {
                         let redirectUri = chrome.identity.getRedirectURL(),
                             appID = domainData.token,
                             authUrl = `${domainData.url}/oauth/authorize?client_id=${appID}&redirect_uri=${redirectUri}&response_type=token&state=YOUR_UNIQUE_STATE_HASH`;
-                        return gitlabOAuthAuthentication(authUrl);
+                        return gitlabOAuthAuthentication(authUrl, domainData);
                     }
                 })
                 .then(accessToken => sendResponse(accessToken))
@@ -86,7 +87,7 @@ function getDomainData(domainUrl) {
     });
 }
 
-function gitlabOAuthAuthentication(authUrl) {
+function gitlabOAuthAuthentication(authUrl, domainData) {
     let gitlabAccessTokenKey = 'gitlab-access-token_' + authUrl,
         validTimeTimestamp = 1000 * 60 * 60 * 24 * 2; // 2 days
 
@@ -119,7 +120,7 @@ function gitlabOAuthAuthentication(authUrl) {
                                     }
                                 });
 
-                            resolve({token: accessToken, type: 'oauth',});
+                            resolve({token: accessToken, type: 'oauth', data: domainData});
                         } else {
                             reject('Authentication failed.');
                         }

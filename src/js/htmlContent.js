@@ -43,7 +43,7 @@ export default class HTMLContent {
                         <small class="e-note">${mergeRequest.sourceBranch} ⮕ ${mergeRequest.targetBranch}</small> 
                     </div>
                     <div class="c-merge-request__col c-merge-request__col--third">
-                        ${participants.map(user => `<div class="c-avatar${user.approved ? ' is-approved': ''}"><img class="c-avatar__img c-avatar__img--small" src="${user.avatarUrl}" alt="${user.name}" title="${user.name}"></div>`).join('')}
+                        ${participants.map(user => `<div class="c-avatar${user.approved ? ' is-approved': ''}"><img class="c-avatar__img c-avatar__img--small" src="${user.avatarUrl}" alt="${user.name}" title="${user.name} (ID ${user.id})"></div>`).join('')}
                     </div>
                  </li>`
         }

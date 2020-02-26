@@ -5,7 +5,7 @@
     <title>Options - Gitlab MR summary</title>
     <link href="style.css" type="text/css" rel="stylesheet">
 </head>
-<body class="scope-essentials-v1.50.0">
+<body class="scope-essentials-v1.50.0 scope-gitlab-mr-summary">
     <div class="o-wrapper">    
         <form class="c-form js-form-add">
             <fieldset>
@@ -15,39 +15,53 @@
                     <p class="c-notice__content">Extension require these scopes to be enabled for given token: <span class="u-bold">read_user</span>, <span class="u-bold">api</span>.</p>
                 </div>
                 <div class="c-form__inputs-cont">
-                    <div class="c-form-cell c-form-cell--inline">
+                    <div class="c-form-cell">
                         <label for="input1" class="c-form-cell__label u-epsilon">Domain:</label> 
                         <input class="js-form-add__domain e-input" id="input1" name="domain" type="url" placeholder="Gitlab domain..." value="https://">
                     </div>
                     <fieldset>
-                        <legend class="u-gamma">Auth type</legend>
+                        <legend class="u-epsilon u-bold">Auth type:</legend>
                         <div class="c-form-cell c-form-cell--inline">
                             <input class="e-input" id="auth_type-private" type="radio" value="private" name="auth_type" checked>
                             <label for="auth_type-private" class="e-input e-input--faux" aria-hidden="true"></label>
                             <label for="auth_type-private" class="c-form-cell__label u-epsilon">Private token</label>
                         </div>
-                            
                         <div class="c-form-cell c-form-cell--inline">
                             <input class="e-input" id="auth_type-oauth" type="radio" value="oauth" name="auth_type">
                             <label for="auth_type-oauth" class="e-input e-input--faux" aria-hidden="true"></label>
                             <label for="auth_type-oauth" class="c-form-cell__label u-epsilon">Gitlab OAuth</label>
                             <span class="c-redirect-url js-redirect-url"></span>
                         </div>
-                        <div class="c-form-cell c-form-cell--inline">
+                        <div class="c-form-cell">
                             <label for="input2" class="c-form-cell__label u-epsilon">App ID / Private token:</label> 
-                            <input class="e-input js-form-add__token" id="input2" type="text" name="token" required></div>
+                            <input class="e-input js-form-add__token" id="input2" type="text" name="token" required>
+                        </div>
+                        <div class="c-form-cell">
+                            <div class="c-notice c-notice--small">
+                                <svg class="c-notice__icon e-icon e-icon--circle u-delta" aria-hidden="true"><use xlink:href="#info"></use></svg>
+                                <p class="c-notice__content">If for some reason you use some dummy users in groups, here you can exclude them from view.</p>
+                            </div>
+                            <label for="dummy-users-id-input" class="c-form-cell__label u-epsilon">Dummy users ID: <span class="u-milli u-color-text-light">(comma separated list of IDs)</span></label>
+                            <input class="e-input" id="dummy-users-id-input" type="text" name="dummy-users-id" pattern="^(\d+,?)*$" placeholder="123456,123456,123456">
+                        </div>
+                        <div class="c-form-cell">
+                            <label for="cache-time-input" class="c-form-cell__label u-epsilon">Cache time [minutes]: <span class="u-milli u-color-text-light">(set how long will be downloaded data cached before they will be downloaded again)</span></label>
+                            <input class="e-input" id="cache-time-input" type="number" min="1" value="8" name="cache-time">
+                        </div>
                     </fieldset>
                     <button class="e-button">Add settings</button>
                 </div>
             </fieldset>
         </form>
-        <form class="js-form-del">
-            <table class="o-table js-sites-table">
+        <form class="js-form-actual-settings">
+            <table class="c-actual-domains o-table js-sites-table">
                 <thead>
                     <tr>
                         <th>Domain</th>
                         <th>Auth type</th>
                         <th>App ID / Private token</th>
+                        <th>Dummy users Id</th>
+                        <th>Cache time</th>
                         <th></th>
                     </tr>
                 </thead>

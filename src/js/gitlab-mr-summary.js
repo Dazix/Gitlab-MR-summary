@@ -17,15 +17,20 @@ class GitlabMRSummary {
     /** @type {Storage} */
     #storage;
     
+    /** @type {{token: string, type: string, data: {token: string, authType: string, url: string, dummyUsersId: number[], cacheTime: number}}} */
+    #domainData;
+    
     /**
+     * @param {{token: string, type: string, data: {token: string, authType: string, url: string, dummyUsersId: number[], cacheTime: number}}} domainData
      * @param {Downloader} downloader
      * @param {HTMLContent} htmlGenerator
      * @param {Storage} storage
      */
-    constructor(downloader, htmlGenerator, storage) {
+    constructor(domainData, downloader, htmlGenerator, storage) {
         this.#downloader = downloader;
         this.#htmlGenerator = htmlGenerator;
         this.#storage = storage;
+        this.#domainData = domainData;
     }
 
     async run() {
@@ -44,12 +49,15 @@ class GitlabMRSummary {
             data = await loadData();
         } else {
             data = new Data(data);
-            if (data.age < new Date() - 1000 * 60 * 5) {
+            if (data.age < new Date() - 1000 * 60 * this.#domainData.data.cacheTime) {
                 data = await loadData();
             }
         }
         
-        data.mergeRequests = this._removeParticipantsFromMergeRequestsByIds(data.mergeRequests, [data.user.id]);
+        data.mergeRequests = this._removeParticipantsFromMergeRequestsByIds(
+            data.mergeRequests,
+            [data.user.id].concat(this.#domainData.data.dummyUsersId),
+        );
         
         let html = this.#htmlGenerator.renderList(data);
         this._replaceSpinnerIconByClassicIcon();
@@ -140,6 +148,7 @@ class GitlabMRSummary {
 
 Authenticator.authenticate().then(accessData => {
      new GitlabMRSummary(
+         accessData,
          new Downloader(accessData),
          new HTMLContent(),
          new Storage(),

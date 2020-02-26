@@ -12,7 +12,7 @@ class Options {
         this._init();
         this._insertRedirectUrl();
         this._observeAdd();
-        this._observeDel();
+        this._observeUpdate();
     }
 
     async _init() {
@@ -25,7 +25,9 @@ class Options {
                 this._insertRow(
                     domainSettings.url,
                     domainSettings.authType === 'private' ? 'Private token' : 'Gitlab OAuth',
-                    this._obfuscateToken(domainSettings.token)
+                    this._obfuscateToken(domainSettings.token),
+                    domainSettings.dummyUsersId,
+                    domainSettings.cacheTime,
                 );
             }
         } catch (e) {
@@ -52,8 +54,15 @@ class Options {
             let tokenInput = document.querySelector('.js-form-add__token');
             if (domainInput.checkValidity() && tokenInput.checkValidity()) {
                 let domainUrl = (new URL(formData.get('domain'))).toString();
+                let dummyUsersId = formData.get('dummy-users-id') ? formData.get('dummy-users-id').split(',').map(id => parseInt(id)) : [];
                 let saveDomain = () => {
-                    return this._saveNewDomain(domainUrl, formData.get('auth_type'), formData.get('token'));
+                    return this._saveNewOrUpdateDomain(
+                        domainUrl,
+                        formData.get('auth_type'),
+                        formData.get('token'),
+                        dummyUsersId,
+                        parseInt(formData.get('cache-time'))
+                    );
                 };
                 this.permissionManager.request([], [domainUrl])
                     .then(saveDomain.bind(this))
@@ -64,8 +73,8 @@ class Options {
         });
     }
 
-    _observeDel() {
-        let form = document.querySelector('.js-form-del');
+    _observeUpdate() {
+        let form = document.querySelector('.js-form-actual-settings');
         form.addEventListener('click', evt => {
             if (evt.target.classList.contains('js-del-button')) {
                 evt.preventDefault();
@@ -75,6 +84,19 @@ class Options {
                 this._deleteDomain(evt.target.value)
                     .then(remove.bind(this))
                     .then(this._init.bind(this));
+            } else if (evt.target.classList.contains('js-update-button')) {
+                evt.preventDefault();
+                let row = evt.target.closest('tr');
+                let dummyUsersId = row.querySelector('.js-input-dummy-user-id').value;
+                dummyUsersId = dummyUsersId ? dummyUsersId.split(',').map(id => parseInt(id)) : [];
+                let cacheTime = parseInt(row.querySelector('.js-input-cache-time').value);
+                this._saveNewOrUpdateDomain(
+                    evt.target.value,
+                    null,
+                    null,
+                    dummyUsersId,
+                    cacheTime
+                ).then()
             }
         });
     }
@@ -84,17 +106,22 @@ class Options {
         tableBody.innerHTML = '';
     }
 
-    _insertRow(domain, authType, token) {
+    _insertRow(domain, authType, token, dummyUsersId, cacheTime) {
         let tableBody = document.querySelector('.js-sites-table__body');
-        tableBody.insertAdjacentHTML('afterbegin', this._renderRow(domain, authType, token));
+        tableBody.insertAdjacentHTML('afterbegin', this._renderRow(domain, authType, token, dummyUsersId, cacheTime));
     }
 
-    _renderRow(domain, authType, token) {
+    _renderRow(domain, authType, token, dummyUsersId, cacheTime) {
         return `<tr>
                     <td>${domain}</td>
                     <td>${authType}</td>
                     <td>${token}</td>
-                    <td><button class="js-del-button e-button e-button--negative" name="del" value="${domain}">delete</button></td>
+                    <td><input class="js-input-dummy-user-id e-input" type="text" value="${dummyUsersId ? dummyUsersId.join(',') : ''}" pattern="^(\d+,?)*$"></td>
+                    <td><input class="c-actual-domains__cache-time js-input-cache-time e-input" type="number" min="1" size="3" value="${cacheTime}"></td>
+                    <td class="c-actual-domains__buttons">
+                        <button class="c-actual-domains__button js-update-button e-button e-button--positive" name="update" value="${domain}">UPDATE</button>
+                        <button class="c-actual-domains__button js-del-button e-button e-button--negative" name="del" value="${domain}">DELETE</button>
+                    </td>
                 </tr>`;
     }
 
@@ -102,14 +129,18 @@ class Options {
         return token.substr(0, 4) + '*****' + token.substr(token.length - 4, token.length);
     }
 
-    _saveNewDomain(domain, authType, token) {
+    _saveNewOrUpdateDomain(domain, authType, token, dummyUsersId, cacheTime) {
         return this._loadData()
             .then(data => {
                 let updated = false;
                 for (let domainData of data) {
                     if (domainData.url === domain) {
-                        domainData.token = token;
-                        domainData.authType = authType;
+                        if (token && authType) {
+                            domainData.token = token;
+                            domainData.authType = authType;
+                        }
+                        domainData.dummyUsersId = dummyUsersId;
+                        domainData.cacheTime = cacheTime;
                         updated = true;
                     }
                 }
@@ -119,6 +150,8 @@ class Options {
                         url: domain,
                         authType: authType,
                         token: token,
+                        dummyUsersId: dummyUsersId,
+                        cacheTime: cacheTime,
                     });
                 }
 
