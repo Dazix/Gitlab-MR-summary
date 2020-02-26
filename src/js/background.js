@@ -11,15 +11,14 @@ chrome.runtime.onInstalled.addListener((details) => {
     });
 });
 
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    if (changeInfo.status !== 'complete') return;
-    let tabUrl = new URL(tab.url);
+chrome.webNavigation.onDOMContentLoaded.addListener(async details => {
+    let tabUrl = new URL(details.url);
     let data = null;
     try {
         data = await getDomainData(tabUrl.origin + '/');
         if (data) {
-            await executeScript(tabId, 'gitlab-mr-summary.js')
-                .then(() => insertCss(tabId, 'gitlab-mr-summary.css'))
+            await executeScript(details.tabId, 'gitlab-mr-summary.js')
+                .then(() => insertCss(details.tabId, 'gitlab-mr-summary.css'))
         }
     } catch (e) {
         console.debug(e);
