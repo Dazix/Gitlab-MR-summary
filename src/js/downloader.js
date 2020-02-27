@@ -12,7 +12,7 @@ export default class Downloader {
         /** @type Data */
         this._downloadedData = new Data();
 
-        this.urls = new GitlabApiUrls();
+        this.urls = new GitlabApiUrls(gitlabAccessData.data.url);
     }
 
     async getData() {

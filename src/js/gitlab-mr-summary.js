@@ -1,15 +1,13 @@
 import Data from "./data";
-import Downloader from "./downloader";
 import HTMLContent from "./htmlContent";
 import Storage from "./storage"
-import Authenticator from "./authenticator";
+import Messenger from "./messenger";
+import ErrorCodes from "./errorCodes";
+import {DownloadAlreadyInProgressError} from "./errors";
 
 class GitlabMRSummary {
 
     #storageKey = 'mergeRequestsData';
-    
-    /** @type {Downloader} */
-    #downloader;
 
     /** @type {HTMLContent} */
     #htmlGenerator;
@@ -17,23 +15,22 @@ class GitlabMRSummary {
     /** @type {Storage} */
     #storage;
     
-    /** @type {{token: string, type: string, data: {token: string, authType: string, url: string, dummyUsersId: number[], cacheTime: number}}} */
+    /** @type {{data: {url: string, dummyUsersId: number[], cacheTime: number}}} */
     #domainData;
     
     /**
-     * @param {{token: string, type: string, data: {token: string, authType: string, url: string, dummyUsersId: number[], cacheTime: number}}} domainData
-     * @param {Downloader} downloader
+     * @param {{data: {url: string, dummyUsersId: number[], cacheTime: number}}} domainData
      * @param {HTMLContent} htmlGenerator
      * @param {Storage} storage
      */
-    constructor(domainData, downloader, htmlGenerator, storage) {
-        this.#downloader = downloader;
+    constructor(domainData, htmlGenerator, storage) {
         this.#htmlGenerator = htmlGenerator;
         this.#storage = storage;
         this.#domainData = domainData;
 
         this._showSpinnerIcon();
         this._observeMenuActions();
+        this._getMenuEntry().querySelector('.js-gitlab-mr-summary__data-cont').innerHTML = this.#htmlGenerator.getSkeleton();
     }
 
     async run() {
@@ -47,16 +44,24 @@ class GitlabMRSummary {
      * @private
      */
     _show(data) {
-        data.mergeRequests = this._removeParticipantsFromMergeRequestsByIds(
-            data.mergeRequests,
-            [data.user.id].concat(this.#domainData.data.dummyUsersId),
-        );
+        let dropdown = this._getDropdown();
+        if (data.errorMessage === undefined) {
+            data.mergeRequests = this._removeParticipantsFromMergeRequestsByIds(
+                data.mergeRequests,
+                [data.user.id].concat(this.#domainData.data.dummyUsersId),
+            );
+            let htmlFragments = this.#htmlGenerator.renderList(data);
+            dropdown.querySelector('.js-dropdown__mr-cont').innerHTML = htmlFragments.mergeRequestsOverview;
+            dropdown.querySelector('.js-dropdown__last-update').innerHTML = htmlFragments.lastUpdate;
 
-        let html = this.#htmlGenerator.renderList(data);
-        this._getMenuEntry().querySelector('.js-gitlab-mr-summary__data-cont').innerHTML = html;
+            dropdown.querySelector('.js-dropdown__error').innerHTML = '';
 
+            this._updateMergeRequestsCount(data.nonUsersMergeRequestsNotApproved.length);
+        } else {
+            dropdown.querySelector('.js-dropdown__error').innerHTML = data.errorMessage;
+        }
+        
         this._showClassicIcon();
-        this._updateMergeRequestsCount(data.nonUsersMergeRequestsNotApproved.length);
     }
 
     /**
@@ -64,25 +69,41 @@ class GitlabMRSummary {
      * @return {Data}
      */
     async getData(forceLoad = false) {
-        /** @type Data */
-        let data = await this.#storage.get(this.#storageKey);
-        if (!data || forceLoad) {
-            data = await this._loadData();
-        } else {
-            data = new Data(data);
-            if (data.age < new Date() - 1000 * 60 * this.#domainData.data.cacheTime) {
+        let data = new Data();
+        try {
+            data = await this.#storage.get(this.#storageKey);
+            if (!data || forceLoad) {
                 data = await this._loadData();
+            } else {
+                data = new Data(data);
+                let time = this.#domainData.data.cacheTime;
+                if (data.age < new Date() - 1000 * 60 * time) {
+                    data = await this._loadData();
+                }
+            }
+        } catch (e) {
+            if (e instanceof DownloadAlreadyInProgressError) {
+                data.errorMessage = 'Download already in progress. Try again later.'
+            } else {
+                throw e;
             }
         }
         
         return data;
     }
-    
-    async _loadData() {
-        let data = await this.#downloader.getData();
-        await this.#storage.set(this.#storageKey, data.getAsSimpleDataObject());
 
-        return data;
+    /**
+     * @return {Promise<Data>}
+     * @private
+     */
+    async _loadData() {
+        let data = await Messenger.send(Messenger.DOWNLOAD_DATA);
+        if (data.code === ErrorCodes.DOWNLOAD_ALREADY_IN_PROGRESS) {
+            throw new DownloadAlreadyInProgressError();
+        }
+        await this.#storage.set(this.#storageKey, data);
+
+        return new Data(data);
     }
 
     _observeUsersActions() {
@@ -181,6 +202,14 @@ class GitlabMRSummary {
         
         return  menuEntry;
     }
+
+    /**
+     * @return {Element | any}
+     * @private
+     */
+    _getDropdown() {
+        return this._getMenuEntry().querySelector('.js-dropdown');
+    }
     
     _showSpinnerIcon() {
         let menuEntry = this._getMenuEntry();
@@ -213,10 +242,9 @@ class GitlabMRSummary {
 }
 
 
-Authenticator.authenticate().then(accessData => {
+Messenger.send(Messenger.GET_DOMAIN_DATA).then(domainData => {
      new GitlabMRSummary(
-         accessData,
-         new Downloader(accessData),
+         domainData,
          new HTMLContent(),
          new Storage(),
      ).run();

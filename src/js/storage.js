@@ -33,4 +33,16 @@ export default class Storage {
             });
         });
     }
+    
+    remove(key) {
+        return new Promise((resolve, reject) => {
+            this.#storage.remove(key, () => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
 }

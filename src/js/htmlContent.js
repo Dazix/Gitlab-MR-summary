@@ -2,24 +2,32 @@ import Data from "./data";
 
 export default class HTMLContent {
 
-    /**
-     * @param {Data} data
-     * @return {string}
-     */
-    renderList(data) {
+    
+    getSkeleton() {
         return `
             <div class="c-dropdown js-dropdown scope-essentials-v1.50.0 dropdown-menu dropdown-menu-right hidden">
+                <div class="js-dropdown__error"></div>
                 <div class="c-info e-note">
-                    Last update: ${data.age.toLocaleTimeString()} ${data.age.toDateString()} <button class="c-refresh-btn u-gamma js-refresh-button">&#8635;</button>
+                    Last update: <span class="js-dropdown__last-update">?</span> <button class="c-refresh-btn u-gamma js-refresh-button">&#8635;</button>
                 </div>
-                <div class="c-dropdown__tab">
-                    <h3 class="e-heading u-bold u-gamma">To review</h3>
-                    ${this._getSimpleMRsList(Data.sortByAlreadyApprovedAndByDate(data.nonUsersMergeRequests))}
-                    <h3 class="e-heading u-bold u-gamma">Created</h3>
-                    ${this._getSimpleMRsList(Data.sortByDate(data.usersMergeRequests))}
-                </div>
+                <div class="c-dropdown__tab js-dropdown__mr-cont"></div>
             </div>
         `;
+    }
+    
+    /**
+     * @param {Data} data
+     * @return {{lastUpdate: string, mergeRequestsOverview: string}}
+     */
+    renderList(data) {
+        return {
+            lastUpdate: `${data.age.toLocaleTimeString()} ${data.age.toDateString()}`,
+            mergeRequestsOverview: 
+                `<h3 class="e-heading u-bold u-gamma">To review</h3>
+                ${this._getSimpleMRsList(Data.sortByAlreadyApprovedAndByDate(data.nonUsersMergeRequests))}
+                <h3 class="e-heading u-bold u-gamma">Created</h3>
+                ${this._getSimpleMRsList(Data.sortByDate(data.usersMergeRequests))}`,
+        };
     }
 
     /**

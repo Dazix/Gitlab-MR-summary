@@ -11,6 +11,9 @@ export default class Data {
 
     /** @type {MergeRequest[]} */
     mergeRequests;
+    
+    /** @type {string} */
+    errorMessage;
 
     /**
      * @param {{mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}} data
