@@ -95,7 +95,11 @@ class GitlabMRSummary {
                 let data = await this.getData(true);
                 this._show(data);
             } else if (targetElm.dataset.qaSelector === 'approve_button') {
-                console.log(targetElm.innerText);
+                if (targetElm.innerText === 'Approve') {
+                    
+                } else if (targetElm.innerText === 'Revoke approval') {
+                    
+                }
             }
         });
     }
