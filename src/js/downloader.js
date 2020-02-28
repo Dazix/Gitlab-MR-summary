@@ -256,7 +256,7 @@ export default class Downloader {
                 headers.append('Authorization', `Bearer ${this._gitlabAccessData.token}`)
             }
 
-            headers.append('User-Agent', 'GitlabMRSummary-BrowserExtension');
+            headers.append('User-Agent', 'GitlabMRSummary-BrowserExtension/https://github.com/Dazix/Gitlab-MR-summary');
 
             let response = await fetch(
                 url,
