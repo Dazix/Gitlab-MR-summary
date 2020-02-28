@@ -44,7 +44,7 @@ export default class Data {
      * @return {MergeRequest[]}
      */
     get nonUsersMergeRequestsNotApproved() {
-        let filterFunction = mr => mr.approvedByUser;
+        let filterFunction = mr => !mr.approvedByUser;
         return this._filterMergeRequests(filterFunction, this.nonUsersMergeRequests)
     }
 
