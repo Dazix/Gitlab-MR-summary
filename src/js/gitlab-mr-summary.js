@@ -121,6 +121,8 @@ class GitlabMRSummary {
                 } else if (targetElm.innerText === 'Revoke approval') {
                     
                 }
+            } else if (targetElm.classList.contains('qa-merge-button') && !targetElm.disabled) {
+                
             }
         });
     }

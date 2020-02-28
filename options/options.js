@@ -90,13 +90,26 @@ class Options {
                 let dummyUsersId = row.querySelector('.js-input-dummy-user-id').value;
                 dummyUsersId = dummyUsersId ? dummyUsersId.split(',').map(id => parseInt(id)) : [];
                 let cacheTime = parseInt(row.querySelector('.js-input-cache-time').value);
+                let showInfoRow = (message, type = 'success') => {
+                    let colSpanNum = row.children.length;
+                    let newRow = document.createElement('tr');
+                    newRow.classList.add(`c-actual-domains__info-row`, `c-actual-domains__info-row--${type}`);
+                    newRow.innerHTML = `<td colspan="${colSpanNum}" class="u-bold">${message}</td>`;
+
+                    row.insertAdjacentElement('beforebegin', newRow);
+                    setTimeout(() => newRow.remove(), 2000);
+                };
                 this._saveNewOrUpdateDomain(
                     evt.target.value,
                     null,
                     null,
                     dummyUsersId,
                     cacheTime
-                ).then()
+                ).then(() => {
+                    showInfoRow('Successfully updated.');
+                }).catch(() => {
+                    showInfoRow('Failed to update values.', 'error');
+                });
             }
         });
     }
