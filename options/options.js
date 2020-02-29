@@ -1,9 +1,10 @@
 import PermissionsManager from "../js/permissions-manager.js";
+import StorageManagerObject from "../js/storageManagerObject.js";
 
 class Options {
 
     /**
-     * @param storage
+     * @param {StorageManagerObject} storage
      * @param {PermissionsManager} permissionManager
      */
     constructor(storage, permissionManager) {
@@ -139,73 +140,44 @@ class Options {
     }
 
     _obfuscateToken(token) {
-        return token.substr(0, 4) + '*****' + token.substr(token.length - 4, token.length);
+        return token.substr(0, 3) + '*****' + token.substr(token.length - 3, token.length);
     }
 
-    _saveNewOrUpdateDomain(domain, authType, token, dummyUsersId, cacheTime) {
-        return this._loadData()
-            .then(data => {
-                let updated = false;
-                for (let domainData of data) {
-                    if (domainData.url === domain) {
-                        if (token && authType) {
-                            domainData.token = token;
-                            domainData.authType = authType;
-                        }
-                        domainData.dummyUsersId = dummyUsersId;
-                        domainData.cacheTime = cacheTime;
-                        updated = true;
-                    }
-                }
-
-                if (!updated) {
-                    data.push({
-                        url: domain,
-                        authType: authType,
-                        token: token,
-                        dummyUsersId: dummyUsersId,
-                        cacheTime: cacheTime,
-                    });
-                }
-
-                return data;
-            }).then(this._saveData.bind(this))
-            .catch(err => console.error(err));
+    async _saveNewOrUpdateDomain(domain, authType, token, dummyUsersId, cacheTime) {
+        try {
+            let data = {};
+            authType && (data.authType = authType);
+            token && (data.token = token);
+            data.dummyUsersId = dummyUsersId;
+            data.cacheTime = cacheTime;
+            data.url = domain;
+            
+            await this._saveData(domain, data);
+        } catch (e) {
+            console.error(e);
+        }
     }
 
-    _deleteDomain(domain) {
-        return this._loadData()
-            .then(data => data.filter(domainData => domainData.url !== domain))
-            .then(this._saveData.bind(this))
-            .catch(err => console.error(err));
+    async _deleteDomain(domain) {
+        return await this.storage.remove(this.storage.getKeyFromUrl(domain));
     }
     
-    _loadData() {
-        return new Promise((resolve, reject) => {
-            this.storage.get(['domains'], result => {
-                if (result['domains']) {
-                    resolve(result['domains']);
-                } else {
-                    resolve([])
-                }
-            });
-        });
+    async _loadData() {
+        let domains = [];
+        try {
+            domains = await this.storage.getDomainData();
+        } catch (e) {}
+        
+        return domains;
     }
 
-    _saveData(data) {
-        return new Promise((resolve, reject) => {
-            this.storage.set({domains: data}, res => {
-                if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError);
-                } else {
-                    resolve();
-                }
-            })
-        });
+    async _saveData(url, data) {
+        await this.storage.setDomainData(url, data);
     }
 
 }
 
-new Options(chrome.storage.local, new PermissionsManager());
+let storage = new StorageManagerObject();
+new Options(storage, new PermissionsManager());
 
-chrome.storage.local.set({options_shown: true});
+storage.set({options_shown: true});

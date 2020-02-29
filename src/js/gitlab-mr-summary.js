@@ -1,8 +1,8 @@
 import Data from "./data";
 import HTMLContent from "./htmlContent";
-import Storage from "./storage"
+import StorageManagerObject from "./storageManagerObject"
 import Messenger from "./messenger";
-import ErrorCodes from "./errorCodes";
+import StatusCodes from "./statusCodes";
 import {DownloadAlreadyInProgressError} from "./errors";
 
 class GitlabMRSummary {
@@ -12,19 +12,22 @@ class GitlabMRSummary {
     /** @type {HTMLContent} */
     #htmlGenerator;
     
-    /** @type {Storage} */
+    /** @type {StorageManagerObject} */
     #storage;
     
-    /** @type {{data: {url: string, dummyUsersId: number[], cacheTime: number}}} */
+    /** @type {{url: string, dummyUsersId: number[], cacheTime: number, mergeRequestsData: {mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}}} */
     #domainData;
     
     /** @type {Messenger} */
     #messenger;
     
+    /** @type {Data} */
+    #mergeRequestsData;
+    
     /**
-     * @param {{data: {url: string, dummyUsersId: number[], cacheTime: number}}} domainData
+     * @param {{url: string, dummyUsersId: number[], cacheTime: number, mergeRequestsData: {mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}}} domainData
      * @param {HTMLContent} htmlGenerator
-     * @param {Storage} storage
+     * @param {StorageManagerObject} storage
      * @param {Messenger} messenger
      */
     constructor(domainData, htmlGenerator, storage, messenger) {
@@ -32,6 +35,7 @@ class GitlabMRSummary {
         this.#storage = storage;
         this.#domainData = domainData;
         this.#messenger = messenger;
+        this.#mergeRequestsData = new Data(domainData.mergeRequestsData ? domainData.mergeRequestsData : {});
 
         this._showSpinnerIcon();
         this._observeMenuActions();
@@ -64,7 +68,7 @@ class GitlabMRSummary {
         if (data.errorMessage === undefined) {
             data.mergeRequests = this._removeParticipantsFromMergeRequestsByIds(
                 data.mergeRequests,
-                [data.user.id].concat(this.#domainData.data.dummyUsersId),
+                [data.user.id].concat(this.#domainData.dummyUsersId),
             );
             let htmlFragments = this.#htmlGenerator.renderList(data);
             dropdown.querySelector('.js-dropdown__mr-cont').innerHTML = htmlFragments.mergeRequestsOverview;
@@ -85,27 +89,24 @@ class GitlabMRSummary {
      * @return {Data}
      */
     async _getData(forceLoad = false) {
-        let data = new Data();
         try {
-            data = await this.#storage.get(this.#storageKey);
-            if (!data || forceLoad) {
-                data = await this._loadData();
+            if (!this.#mergeRequestsData.age || forceLoad) {
+                this.#mergeRequestsData = await this._loadData();
             } else {
-                data = new Data(data);
-                let time = this.#domainData.data.cacheTime;
-                if (data.age < new Date() - 1000 * 60 * time) {
-                    data = await this._loadData();
+                let time = this.#domainData.cacheTime;
+                if (this.#mergeRequestsData.age < new Date() - 1000 * 60 * time) {
+                    this.#mergeRequestsData = await this._loadData();
                 }
             }
         } catch (e) {
             if (e instanceof DownloadAlreadyInProgressError) {
-                data.errorMessage = 'Download already in progress. Try again later.'
+                this.#mergeRequestsData.errorMessage = 'Download already in progress. Try again later.'
             } else {
                 throw e;
             }
         }
         
-        return data;
+        return this.#mergeRequestsData;
     }
 
     /**
@@ -114,10 +115,10 @@ class GitlabMRSummary {
      */
     async _loadData() {
         let data = await Messenger.send(Messenger.DOWNLOAD_DATA);
-        if (data.code === ErrorCodes.DOWNLOAD_ALREADY_IN_PROGRESS) {
+        if (data.statusCode === StatusCodes.DOWNLOAD_ALREADY_IN_PROGRESS) {
             throw new DownloadAlreadyInProgressError();
         }
-        await this.#storage.set(this.#storageKey, data);
+        await this.#storage.setDomainData(window.location.origin, {[this.#storageKey]: data});
 
         return new Data(data);
     }
@@ -264,7 +265,7 @@ Messenger.send(Messenger.GET_DOMAIN_DATA).then(domainData => {
      new GitlabMRSummary(
          domainData,
          new HTMLContent(),
-         new Storage(),
+         new StorageManagerObject(),
          new Messenger(),
      ).run();
 }).catch(err => console.debug(err));

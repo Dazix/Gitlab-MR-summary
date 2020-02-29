@@ -8,7 +8,7 @@ export default class HTMLContent {
             <div class="c-dropdown js-dropdown scope-essentials-v1.50.0 dropdown-menu dropdown-menu-right hidden">
                 <div class="js-dropdown__error"></div>
                 <div class="c-info e-note">
-                    Last update: <span class="js-dropdown__last-update">?</span> <button class="c-refresh-btn u-gamma js-refresh-button">&#8635;</button>
+                    Last update:<span class="c-last-update-time js-dropdown__last-update">?</span><button class="c-refresh-btn u-gamma js-refresh-button">&#8635;</button>
                 </div>
                 <div class="c-dropdown__tab js-dropdown__mr-cont"></div>
             </div>

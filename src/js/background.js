@@ -1,26 +1,43 @@
-import User from './user'
 import Messenger from "./messenger";
 import Downloader from "./downloader";
-import ErrorCodes from "./errorCodes";
-import {LockAlreadySetError} from "./errors";
+import StatusCodes from "./statusCodes";
+import {LockAlreadySetError, OAuthAuthenticationFailedError} from "./errors";
 import Lock from "./lock";
+import StorageManagerObject from "./storageManagerObject";
 
 
 chrome.runtime.onInstalled.addListener((details) => {
-    let a = new User();
-    a.test = 1;
-    chrome.storage.local.get(['options_shown'], res => {
-        if (!res['options_shown']) {
-            chrome.runtime.openOptionsPage();
-        }
-    });
+    let storage = new StorageManagerObject();
+    if (details.reason === 'update') {
+        storage.get('domains')
+            .then(domains => {
+                if (domains.length) {
+                    let data = {};
+                    for (let domain of domains) {
+                        data[storage.getKeyFromUrl(domain.url)] = domain;
+                    }
+                    return data;
+                }
+            })
+            .then(newDomainsData => storage.set(newDomainsData))
+            .then(() => storage.remove('domains'))
+            .catch((err) => {
+                console.debug(err);
+            });
+    }
+    storage.get('options_shown')
+        .catch(e => {
+            if (e.statusCode === StatusCodes.NO_DATA) {
+                chrome.runtime.openOptionsPage();
+            }
+        });
 });
 
 chrome.webNavigation.onDOMContentLoaded.addListener(async details => {
     let tabUrl = new URL(details.url);
     let data = null;
     try {
-        data = await getStoredDomainData(tabUrl.origin + '/');
+        data = await getDomainData(tabUrl.origin + '/');
         if (data) {
             await executeScript(details.tabId, 'gitlab-mr-summary.js')
                 .then(() => insertCss(details.tabId, 'gitlab-mr-summary.css'))
@@ -32,12 +49,11 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async details => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message && message.command) {
-        let domainData = null;
         switch (message.command) {
             case Messenger.GET_DOMAIN_DATA:
                 getDomainData(sender.url).then(domainData => {
                     // send only metadata not token etc.
-                    sendResponse({data: domainData.data});
+                    sendResponse(domainData.data);
                 });
                 break;
             case Messenger.DOWNLOAD_DATA:
@@ -49,16 +65,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     lock.set(url.origin + '_data_download')
                         .then(() => downloader.getData())
                         .then(downloadedData => {
-                            return lock.unset(url.origin + '_data_download')
-                                .then(() => {
-                                    sendResponse(downloadedData.getAsSimpleDataObject());
-                                    sendUpdatedDataToTabs(sender.url, downloadedData);
-                                });
+                            sendResponse(downloadedData.getAsSimpleDataObject());
+                            sendUpdatedDataToTabs(sender.url, downloadedData);
                         }).catch(e => {
                             if (e instanceof LockAlreadySetError) {
                                 sendResponse({
                                     message: 'Download already in progress.',
-                                    code: ErrorCodes.DOWNLOAD_ALREADY_IN_PROGRESS,
+                                    statusCode: StatusCodes.DOWNLOAD_ALREADY_IN_PROGRESS,
                                 });
                             } else {
                                 throw e;
@@ -90,12 +103,13 @@ function sendUpdatedDataToTabs(url, data) {
 }
 
 async function getDomainData(usersUrl) {
+    let storage = new StorageManagerObject();
     let url = new URL(usersUrl);
     if (url.pathname.indexOf('oauth/authorize') !== -1) {
         // ignore endpoint oauth/authorize (prevent auth cycling)
         return {authPending: true};
     }
-    let domainData = await getStoredDomainData(url.origin + '/');
+    let domainData = await storage.getDomainData(url.origin);
         
     let authType = domainData.authType;
     let token = domainData.token;
@@ -139,25 +153,45 @@ function insertCss(tabId, filePath) {
     });
 }
 
-function getStoredDomainData(domainUrl) {
-    return new Promise((resolve, reject) => {
-        chrome.storage.local.get(['domains'], result => {
-            if (result['domains']) {
-                for (let domain of result['domains']) {
-                    if (domain.url === domainUrl) {
-                        resolve(domain);
-                    }
+async function gitlabOAuthAuthentication(domainData) {
+    let redirectUrl = chrome.identity.getRedirectURL();
+    let authUrl = `${domainData.url}/oauth/authorize?client_id=${domainData.token}&redirect_uri=${redirectUrl}&response_type=token&state=YOUR_UNIQUE_STATE_HASH`;
+    let gitlabAccessTokenKey = 'gitlab-access-token_' + authUrl;
+    let storage = new StorageManagerObject();
+    
+    if (domainData.oAuth && domainData.oAuth.expireAt >= Date.now()) {
+        return domainData.oAuth.token;
+    } else {
+        let authFlowRedirectUrl = await new Promise((resolve, reject) => {
+            chrome.identity.launchWebAuthFlow({url: authUrl, interactive: true}, authFlowRedirectUrl => {
+                if (!authFlowRedirectUrl) {
+                    reject({message: chrome.runtime.lastError, statusCode: StatusCodes.RUNTIME_LAST_ERROR});
+                } else {
+                    resolve(authFlowRedirectUrl);
                 }
-                reject('No data for domain: ' + domainUrl);
-            }
+            });
         });
-    });
-}
 
-function gitlabOAuthAuthentication(authUrl) {
-    let gitlabAccessTokenKey = 'gitlab-access-token_' + authUrl,
-        validTimeTimestamp = 1000 * 60 * 60 * 24 * 2; // 2 days
+        let url = new URL(authFlowRedirectUrl),
+            urlParams = new URLSearchParams(url.hash.substr(1)),
+            accessToken = urlParams.get('access_token'),
+            expiresIn = urlParams.get('expires_in');
 
+        if (accessToken) {
+            domainData.oAuth = {
+                token: accessToken,
+                expireAt: Date.now() + expiresIn * 1000,
+            };
+            await storage.set(domainData);
+            
+            return {token: accessToken, type: 'oauth'};
+        } else {
+            throw new OAuthAuthenticationFailedError('Authentication failed.')
+        }
+        
+        
+    }
+    
     return new Promise((resolve, reject) => {
         chrome.storage.local.get([gitlabAccessTokenKey], (res) => {
             if (res.hasOwnProperty(gitlabAccessTokenKey) && res[gitlabAccessTokenKey].expireAt >= Date.now()) {

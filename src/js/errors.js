@@ -13,3 +13,19 @@ export class DownloadAlreadyInProgressError extends Error {
         this.name = "DownloadAlreadyInProgressError";
     }
 }
+
+export class OAuthAuthenticationFailedError extends Error {
+    constructor(message) {
+        super();
+        this.message = message;
+        this.name = "OAuthAuthenticationFailedError";
+    }
+}
+
+export class RuntimeLastError extends Error {
+    constructor(message) {
+        super();
+        this.message = message;
+        this.name = "RuntimeLastError";
+    }
+}

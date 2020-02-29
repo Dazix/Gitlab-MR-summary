@@ -250,7 +250,7 @@ export default class Downloader {
     async _sendRequest(url, n = 5) {
         try {
             let headers = new Headers();
-            if (this._gitlabAccessData.type === 'private') {
+            if (this._gitlabAccessData.authType === 'private') {
                 headers.append('Private-Token', this._gitlabAccessData.token);
             } else {
                 headers.append('Authorization', `Bearer ${this._gitlabAccessData.token}`)
