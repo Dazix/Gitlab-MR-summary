@@ -50,7 +50,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         .then(() => downloader.getData())
                         .then(downloadedData => {
                             return lock.unset(url.origin + '_data_download')
-                                .then(() => sendResponse(downloadedData.getAsSimpleDataObject()));
+                                .then(() => {
+                                    sendResponse(downloadedData.getAsSimpleDataObject());
+                                    sendUpdatedDataToTabs(sender.url, downloadedData);
+                                });
                         }).catch(e => {
                             if (e instanceof LockAlreadySetError) {
                                 sendResponse({
@@ -69,6 +72,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     return true;
 });
+
+/**
+ * @param {string} url
+ * @param {Data} data
+ */
+function sendUpdatedDataToTabs(url, data) {
+    let urlObject = new URL(url);
+    chrome.tabs.query({}, (tabs) => {
+        for (let tab of tabs) {
+            // send data only to tabs that begins with given url
+            if (tab.url && tab.url.indexOf(urlObject.origin) === 0) {
+                chrome.tabs.sendMessage(tab.id, {mergeRequestsDataForUpdate: data.getAsSimpleDataObject()});
+            }
+        }
+    });
+}
 
 async function getDomainData(usersUrl) {
     let url = new URL(usersUrl);

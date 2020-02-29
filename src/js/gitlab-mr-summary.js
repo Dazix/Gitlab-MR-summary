@@ -18,15 +18,20 @@ class GitlabMRSummary {
     /** @type {{data: {url: string, dummyUsersId: number[], cacheTime: number}}} */
     #domainData;
     
+    /** @type {Messenger} */
+    #messenger;
+    
     /**
      * @param {{data: {url: string, dummyUsersId: number[], cacheTime: number}}} domainData
      * @param {HTMLContent} htmlGenerator
      * @param {Storage} storage
+     * @param {Messenger} messenger
      */
-    constructor(domainData, htmlGenerator, storage) {
+    constructor(domainData, htmlGenerator, storage, messenger) {
         this.#htmlGenerator = htmlGenerator;
         this.#storage = storage;
         this.#domainData = domainData;
+        this.#messenger = messenger;
 
         this._showSpinnerIcon();
         this._observeMenuActions();
@@ -34,9 +39,20 @@ class GitlabMRSummary {
     }
 
     async run() {
-        let data = await this.getData();
+        let data = await this._getData();
         this._show(data);
         this._observeUsersActions();
+        this._listenForUpdate();
+    }
+
+    _listenForUpdate() {
+        this.#messenger.onMessageCallback = this._onMessage.bind(this);
+    }
+    
+    _onMessage(message) {
+        if (message.mergeRequestsDataForUpdate) {
+            this._show(new Data(message.mergeRequestsDataForUpdate));
+        }
     }
 
     /**
@@ -68,7 +84,7 @@ class GitlabMRSummary {
      * @param forceLoad
      * @return {Data}
      */
-    async getData(forceLoad = false) {
+    async _getData(forceLoad = false) {
         let data = new Data();
         try {
             data = await this.#storage.get(this.#storageKey);
@@ -113,7 +129,7 @@ class GitlabMRSummary {
             
             if (targetElm.classList.contains('js-refresh-button')) {
                 this._showSpinnerIcon();
-                let data = await this.getData(true);
+                let data = await this._getData(true);
                 this._show(data);
             } else if (targetElm.dataset.qaSelector === 'approve_button') {
                 if (targetElm.innerText === 'Approve') {
@@ -249,5 +265,6 @@ Messenger.send(Messenger.GET_DOMAIN_DATA).then(domainData => {
          domainData,
          new HTMLContent(),
          new Storage(),
+         new Messenger(),
      ).run();
 }).catch(err => console.debug(err));
