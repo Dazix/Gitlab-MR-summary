@@ -32,7 +32,7 @@ class Options {
                 );
             }
         } catch (e) {
-            console.log(e);
+            console.error(e);
         }
     }
 
@@ -69,7 +69,7 @@ class Options {
                     .then(saveDomain.bind(this))
                     .then(this._init.bind(this))
                     .then(() => form.reset())
-                    .catch(err => console.debug(err));
+                    .catch(err => console.error(err));
             }
         });
     }

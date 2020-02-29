@@ -133,11 +133,23 @@ class GitlabMRSummary {
                 let data = await this._getData(true);
                 this._show(data);
             } else if (targetElm.dataset.qaSelector === 'approve_button') {
-                if (targetElm.innerText === 'Approve') {
-                    
-                } else if (targetElm.innerText === 'Revoke approval') {
-                    
-                }
+                // /<namespace>/<project>/-/find_file/master
+                let projectPathWithNamespace = document.body.dataset.findFile.split('/').slice(1,3).join('/');
+                let mergeRequestIID = document.body.dataset.pageTypeId;
+                let mergeRequestUniqueIdFromPage = `${projectPathWithNamespace}-${mergeRequestIID}`;
+                this.#mergeRequestsData.mergeRequests =
+                    this.#mergeRequestsData.mergeRequests
+                        .map(mergeRequest => {
+                            if (mergeRequest.uniqueId === mergeRequestUniqueIdFromPage) {
+                                if (!targetElm.classList.contains('btn-inverted')) {
+                                    mergeRequest.approvedByUser = true;
+                                } else if (targetElm.classList.contains('btn-inverted')) {
+                                    mergeRequest.approvedByUser = false;
+                                }
+                            }
+                            return mergeRequest;
+                        });
+                await Messenger.send(Messenger.SYNC_DATA_OVER_TABS, this.#mergeRequestsData.getAsSimpleDataObject());
             } else if (targetElm.classList.contains('qa-merge-button') && !targetElm.disabled) {
                 
             }
@@ -268,4 +280,4 @@ Messenger.send(Messenger.GET_DOMAIN_DATA).then(domainData => {
          new StorageManagerObject(),
          new Messenger(),
      ).run();
-}).catch(err => console.debug(err));
+}).catch(err => console.error(err));

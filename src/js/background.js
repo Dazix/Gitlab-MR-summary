@@ -4,6 +4,7 @@ import StatusCodes from "./statusCodes";
 import {LockAlreadySetError, OAuthAuthenticationFailedError} from "./errors";
 import Lock from "./lock";
 import StorageManagerObject from "./storageManagerObject";
+import Data from "./data";
 
 
 chrome.runtime.onInstalled.addListener((details) => {
@@ -34,10 +35,9 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 chrome.webNavigation.onDOMContentLoaded.addListener(async details => {
-    let tabUrl = new URL(details.url);
     let data = null;
     try {
-        data = await getDomainData(tabUrl.origin + '/');
+        data = await getDomainData(details.url);
         if (data) {
             await executeScript(details.tabId, 'gitlab-mr-summary.js')
                 .then(() => insertCss(details.tabId, 'gitlab-mr-summary.css'))
@@ -81,6 +81,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         });
                 });
                 break;
+            case Messenger.SYNC_DATA_OVER_TABS:
+                sendUpdatedDataToTabs(sender.url, message.data);
+                sendResponse(true);
+                break;
         }
     }
     return true;
@@ -88,7 +92,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 /**
  * @param {string} url
- * @param {Data} data
+ * @param {Data|{mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}} data
  */
 function sendUpdatedDataToTabs(url, data) {
     let urlObject = new URL(url);
@@ -96,7 +100,7 @@ function sendUpdatedDataToTabs(url, data) {
         for (let tab of tabs) {
             // send data only to tabs that begins with given url
             if (tab.url && tab.url.indexOf(urlObject.origin) === 0) {
-                chrome.tabs.sendMessage(tab.id, {mergeRequestsDataForUpdate: data.getAsSimpleDataObject()});
+                chrome.tabs.sendMessage(tab.id, {mergeRequestsDataForUpdate: (data instanceof Data ? data.getAsSimpleDataObject() : data)});
             }
         }
     });
@@ -104,12 +108,11 @@ function sendUpdatedDataToTabs(url, data) {
 
 async function getDomainData(usersUrl) {
     let storage = new StorageManagerObject();
-    let url = new URL(usersUrl);
-    if (url.pathname.indexOf('oauth/authorize') !== -1) {
+    if (usersUrl.indexOf('oauth/authorize') !== -1) {
         // ignore endpoint oauth/authorize (prevent auth cycling)
         return {authPending: true};
     }
-    let domainData = await storage.getDomainData(url.origin);
+    let domainData = await storage.getDomainData(usersUrl);
         
     let authType = domainData.authType;
     let token = domainData.token;
