@@ -15,6 +15,7 @@ chrome.runtime.onInstalled.addListener((details) => {
                 if (domains.length) {
                     let data = {};
                     for (let domain of domains) {
+                        domain.cacheTime = 5;
                         data[storage.getKeyFromUrl(domain.url)] = domain;
                     }
                     return data;
