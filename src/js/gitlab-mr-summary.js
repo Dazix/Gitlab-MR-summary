@@ -74,11 +74,11 @@ class GitlabMRSummary {
             dropdown.querySelector('.js-dropdown__mr-cont').innerHTML = htmlFragments.mergeRequestsOverview;
             dropdown.querySelector('.js-dropdown__last-update').innerHTML = htmlFragments.lastUpdate;
 
-            dropdown.querySelector('.js-dropdown__error').innerHTML = '';
+            dropdown.querySelector('.js-dropdown__info-cont').innerHTML = '';
 
             this._updateMergeRequestsCount(data.nonUsersMergeRequestsNotApproved.length);
         } else {
-            dropdown.querySelector('.js-dropdown__error').innerHTML = data.errorMessage;
+            dropdown.querySelector('.js-dropdown__info-cont').innerHTML = this.#htmlGenerator.getMessage(data.errorMessage);
         }
         
         this._showClassicIcon();
@@ -127,16 +127,23 @@ class GitlabMRSummary {
         document.body.addEventListener('click', async evt => {
             /** @type Element */
             let targetElm = evt.target;
+
+            let projectPathWithNamespace;
+            let mergeRequestIID;
+            let mergeRequestUniqueIdFromPage;
+            
+            if (document.body.dataset.findFile) {
+                // /<namespace>/<project>/-/find_file/master
+                projectPathWithNamespace = document.body.dataset.findFile.split('/').slice(1,3).join('/');
+                mergeRequestIID = document.body.dataset.pageTypeId;
+                mergeRequestUniqueIdFromPage = `${projectPathWithNamespace}-${mergeRequestIID}`;
+            }
             
             if (targetElm.classList.contains('js-refresh-button')) {
                 this._showSpinnerIcon();
                 let data = await this._getData(true);
                 this._show(data);
             } else if (targetElm.dataset.qaSelector === 'approve_button') {
-                // /<namespace>/<project>/-/find_file/master
-                let projectPathWithNamespace = document.body.dataset.findFile.split('/').slice(1,3).join('/');
-                let mergeRequestIID = document.body.dataset.pageTypeId;
-                let mergeRequestUniqueIdFromPage = `${projectPathWithNamespace}-${mergeRequestIID}`;
                 this.#mergeRequestsData.mergeRequests =
                     this.#mergeRequestsData.mergeRequests
                         .map(mergeRequest => {
@@ -150,8 +157,14 @@ class GitlabMRSummary {
                             return mergeRequest;
                         });
                 await Messenger.send(Messenger.SYNC_DATA_OVER_TABS, this.#mergeRequestsData.getAsSimpleDataObject());
-            } else if (targetElm.classList.contains('qa-merge-button') && !targetElm.disabled) {
-                
+            } else if (targetElm.classList.contains('qa-merge-button')) {
+                let mrButtonIcon = targetElm.querySelector('i');
+                if (mrButtonIcon && mrButtonIcon.classList.contains('fa-spinner')) {
+                    this.#mergeRequestsData.mergeRequests =
+                        this.#mergeRequestsData.mergeRequests
+                            .filter(mergeRequest => mergeRequest.uniqueId !== mergeRequestUniqueIdFromPage);
+                    await Messenger.send(Messenger.SYNC_DATA_OVER_TABS, this.#mergeRequestsData.getAsSimpleDataObject());
+                }
             }
         });
     }

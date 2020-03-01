@@ -83,8 +83,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 });
                 break;
             case Messenger.SYNC_DATA_OVER_TABS:
-                sendUpdatedDataToTabs(sender.url, message.data);
-                sendResponse(true);
+                let storage = new StorageManagerObject();
+                storage.setDomainData(sender.url, {mergeRequestsData: message.data})
+                    .then(() => {
+                        sendUpdatedDataToTabs(sender.url, message.data);
+                        sendResponse(true);
+                    });
                 break;
         }
     }
