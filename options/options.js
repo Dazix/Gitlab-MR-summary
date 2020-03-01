@@ -25,8 +25,8 @@ class Options {
             for (let domainSettings of data) {
                 this._insertRow(
                     domainSettings.url,
-                    domainSettings.authType === 'private' ? 'Private token' : 'Gitlab OAuth',
-                    this._obfuscateToken(domainSettings.token),
+                    domainSettings.auth.type === 'private' ? 'Private token' : 'Gitlab OAuth',
+                    this._obfuscateToken(domainSettings.auth.token),
                     domainSettings.dummyUsersId,
                     domainSettings.cacheTime,
                 );
@@ -146,8 +146,12 @@ class Options {
     async _saveNewOrUpdateDomain(domain, authType, token, dummyUsersId, cacheTime) {
         try {
             let data = {};
-            authType && (data.authType = authType);
-            token && (data.token = token);
+            let auth = {};
+            if (authType || token) {
+                authType && (auth.type = authType);
+                token && (auth.token = token);
+                data.auth = auth;
+            }
             data.dummyUsersId = dummyUsersId;
             data.cacheTime = cacheTime;
             data.url = domain;

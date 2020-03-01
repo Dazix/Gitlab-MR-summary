@@ -1,4 +1,5 @@
 import StatusCodes from "./statusCodes.js";
+import {mergeDeep} from "./utils";
 
 export default class StorageManagerObject {
 
@@ -46,7 +47,7 @@ export default class StorageManagerObject {
                         statusCode: StatusCodes.RUNTIME_LAST_ERROR,
                     });
                 } else if (!query) {
-                    let domains = Object.values(result).filter(item => typeof item === 'object' && 'url' in item && 'token' in item);
+                    let domains = Object.values(result).filter(item => typeof item === 'object' && 'url' in item && 'token' in item.auth);
                     if (domains.length) {
                         resolve(domains);
                     } else {
@@ -118,7 +119,7 @@ export default class StorageManagerObject {
                 }
             }
             
-            Object.assign(domainData, data);
+            mergeDeep(domainData, data);
             
             try {
                 await this.setByKey(urlKey, domainData);

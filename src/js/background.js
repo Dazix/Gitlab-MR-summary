@@ -119,11 +119,9 @@ async function getDomainData(usersUrl) {
     }
     let domainData = await storage.getDomainData(usersUrl);
         
-    let authType = domainData.authType;
-    let token = domainData.token;
+    let authData = domainData.auth;
 
-    delete domainData['token'];
-    delete domainData['authType'];
+    delete domainData['auth'];
 
     let returnData = {
         token: null,
@@ -131,14 +129,11 @@ async function getDomainData(usersUrl) {
         data: domainData,
     };
 
-    if (authType === 'private') {
-        returnData.token = token;
-        returnData.type = authType;
+    if (authData.type === 'private') {
+        returnData.token = authData.token;
+        returnData.type = authData.type;
     } else {
-        let redirectUri = chrome.identity.getRedirectURL(),
-            appID = token,
-            authUrl = `${domainData.url}/oauth/authorize?client_id=${appID}&redirect_uri=${redirectUri}&response_type=token&state=YOUR_UNIQUE_STATE_HASH`;
-        let oAuthData = await gitlabOAuthAuthentication(authUrl);
+        let oAuthData = await gitlabOAuthAuthentication(domainData.url, authData);
         Object.assign(returnData, oAuthData);
     }
 
@@ -161,14 +156,14 @@ function insertCss(tabId, filePath) {
     });
 }
 
-async function gitlabOAuthAuthentication(domainData) {
+async function gitlabOAuthAuthentication(domainUrl, authData) {
     let redirectUrl = chrome.identity.getRedirectURL();
-    let authUrl = `${domainData.url}/oauth/authorize?client_id=${domainData.token}&redirect_uri=${redirectUrl}&response_type=token&state=YOUR_UNIQUE_STATE_HASH`;
-    let gitlabAccessTokenKey = 'gitlab-access-token_' + authUrl;
+    let authUrl = `${domainUrl}/oauth/authorize?client_id=${authData.token}&redirect_uri=${redirectUrl}&response_type=token&state=YOUR_UNIQUE_STATE_HASH`;
     let storage = new StorageManagerObject();
+    let accessToken;
     
-    if (domainData.oAuth && domainData.oAuth.expireAt >= Date.now()) {
-        return domainData.oAuth.token;
+    if (authData && authData.expireAt >= Date.now()) {
+        accessToken = authData.accessToken;
     } else {
         let authFlowRedirectUrl = await new Promise((resolve, reject) => {
             chrome.identity.launchWebAuthFlow({url: authUrl, interactive: true}, authFlowRedirectUrl => {
@@ -182,58 +177,20 @@ async function gitlabOAuthAuthentication(domainData) {
 
         let url = new URL(authFlowRedirectUrl),
             urlParams = new URLSearchParams(url.hash.substr(1)),
-            accessToken = urlParams.get('access_token'),
-            expiresIn = urlParams.get('expires_in');
+            _accessToken = urlParams.get('access_token');
 
-        if (accessToken) {
-            domainData.oAuth = {
-                token: accessToken,
-                expireAt: Date.now() + expiresIn * 1000,
-            };
-            await storage.set(domainData);
+        if (_accessToken) {
+            Object.assign(authData, {
+                accessToken: _accessToken,
+                expireAt: Date.now() + 3600 * 1000,
+            });
+            await storage.setDomainData(domainUrl, {auth: authData});
             
-            return {token: accessToken, type: 'oauth'};
+            accessToken = _accessToken;
         } else {
             throw new OAuthAuthenticationFailedError('Authentication failed.')
         }
-        
-        
     }
-    
-    return new Promise((resolve, reject) => {
-        chrome.storage.local.get([gitlabAccessTokenKey], (res) => {
-            if (res.hasOwnProperty(gitlabAccessTokenKey) && res[gitlabAccessTokenKey].expireAt >= Date.now()) {
-                resolve(res[gitlabAccessTokenKey].token);
-            } else {
-                chrome.identity.launchWebAuthFlow(
-                    {
-                        url: authUrl,
-                        interactive: true
-                    },
-                    redirectUrl => {
-                        if (!redirectUrl) {
-                            reject(chrome.runtime.lastError);
-                            return;
-                        }
-                        let url = new URL(redirectUrl),
-                            urlParams = new URLSearchParams(url.hash.substr(1)),
-                            accessToken = urlParams.get('access_token'),
-                            expiresIn = urlParams.get('expires_in');
 
-                        if (accessToken) {
-                            chrome.storage.local.set(
-                                {
-                                    [gitlabAccessTokenKey]: {
-                                        token: accessToken,
-                                        expireAt: Date.now() + expiresIn * 1000
-                                    }
-                                });
-                            resolve({token: accessToken, type: 'oauth'});
-                        } else {
-                            reject('Authentication failed.');
-                        }
-                    });
-            }
-        });
-    });
+    return {token: accessToken, type: authData.type};
 }
