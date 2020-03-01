@@ -1,5 +1,5 @@
-import PermissionsManager from "../js/permissions-manager.js";
-import StorageManagerObject from "../js/storageManagerObject.js";
+import StorageManagerObject from "../src/js/storageManagerObject";
+import PermissionsManager from "../src/js/permissions-manager";
 
 class Options {
 
