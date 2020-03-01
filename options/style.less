@@ -16,12 +16,20 @@
         margin-left: 1em;
     }
     
-    input:not(checked) ~ .c-redirect-url {
+    .c-redirect-url {
         display: none;
     }
     
     input:checked ~ .c-redirect-url {
         display: block;
+    }
+    
+    .c-auth-type-token-label {
+        display: none;
+        margin-top: 0;
+        &.is-active {
+            display: inline-block;
+        }
     }
     
     .c-actual-domains {}

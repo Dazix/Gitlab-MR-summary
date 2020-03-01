@@ -22,18 +22,21 @@
                     <fieldset>
                         <legend class="u-epsilon u-bold">Auth type:</legend>
                         <div class="c-form-cell c-form-cell--inline">
-                            <input class="e-input" id="auth_type-private" type="radio" value="private" name="auth_type" checked>
+                            <input class="e-input js-auth-type-input" id="auth_type-private" type="radio" value="private" name="auth_type" checked>
                             <label for="auth_type-private" class="e-input e-input--faux" aria-hidden="true"></label>
                             <label for="auth_type-private" class="c-form-cell__label u-epsilon">Private token</label>
                         </div>
                         <div class="c-form-cell c-form-cell--inline">
-                            <input class="e-input" id="auth_type-oauth" type="radio" value="oauth" name="auth_type">
+                            <input class="e-input js-auth-type-input" id="auth_type-oauth" type="radio" value="oauth" name="auth_type">
                             <label for="auth_type-oauth" class="e-input e-input--faux" aria-hidden="true"></label>
                             <label for="auth_type-oauth" class="c-form-cell__label u-epsilon">Gitlab OAuth</label>
                             <span class="c-redirect-url js-redirect-url"></span>
                         </div>
                         <div class="c-form-cell">
-                            <label for="input2" class="c-form-cell__label u-epsilon">App ID / Private token:</label> 
+                            <label for="input2" class="c-form-cell__label u-epsilon">
+                                <span class="c-auth-type-token-label is-active js-auth-type-token-label" data-type="private">Private token:</span>
+                                <span class="c-auth-type-token-label js-auth-type-token-label" data-type="oauth">App ID:</span>
+                            </label> 
                             <input class="e-input js-form-add__token" id="input2" type="text" name="token" required>
                         </div>
                         <div class="c-form-cell">

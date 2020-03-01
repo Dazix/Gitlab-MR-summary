@@ -14,6 +14,18 @@ class Options {
         this._insertRedirectUrl();
         this._observeAdd();
         this._observeUpdate();
+        
+        for (let input of document.querySelectorAll('.js-auth-type-input')) {
+            input.addEventListener('change', evt => {
+                for (let label of document.querySelectorAll('.js-auth-type-token-label')) {
+                    if (label.dataset.type === evt.target.value) {
+                        label.classList.add('is-active');
+                    } else {
+                        label.classList.remove('is-active');
+                    }
+                }
+            });
+        }
     }
 
     async _init() {
