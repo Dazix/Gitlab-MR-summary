@@ -94,6 +94,7 @@ class GitlabMRSummary {
      */
     async _getData(forceLoad = false) {
         try {
+            this._showSpinnerIcon();
             if (!this.#mergeRequestsData.age || forceLoad) {
                 this.#mergeRequestsData = await this._loadData();
             } else {
