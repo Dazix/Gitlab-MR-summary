@@ -65,7 +65,7 @@ class GitlabMRSummary {
      */
     _show(data) {
         let dropdown = this._getDropdown();
-        if (data.errorMessage === undefined) {
+        if (data.errorMessage === undefined || data.age !== undefined) {
             data.mergeRequests = this._removeParticipantsFromMergeRequestsByIds(
                 data.mergeRequests,
                 [data.user.id].concat(this.#domainData.dummyUsersId),
@@ -73,8 +73,12 @@ class GitlabMRSummary {
             let htmlFragments = this.#htmlGenerator.renderList(data);
             dropdown.querySelector('.js-dropdown__mr-cont').innerHTML = htmlFragments.mergeRequestsOverview;
             dropdown.querySelector('.js-dropdown__last-update').innerHTML = htmlFragments.lastUpdate;
-
-            dropdown.querySelector('.js-dropdown__info-cont').innerHTML = '';
+            
+            if (data.errorMessage) {
+                dropdown.querySelector('.js-dropdown__info-cont').innerHTML = this.#htmlGenerator.getMessage(data.errorMessage, 'warning');
+            } else {
+                dropdown.querySelector('.js-dropdown__info-cont').innerHTML = '';
+            }
 
             this._updateMergeRequestsCount(data.nonUsersMergeRequestsNotApproved.length);
         } else {
@@ -95,7 +99,8 @@ class GitlabMRSummary {
             } else {
                 let time = this.#domainData.cacheTime;
                 if (this.#mergeRequestsData.age < new Date() - 1000 * 60 * time) {
-                    this.#mergeRequestsData = await this._loadData();
+                    this._loadData();
+                    this.#mergeRequestsData.errorMessage = 'Download... For now showing old data.'
                 }
             }
         } catch (e) {

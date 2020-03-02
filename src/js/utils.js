@@ -1,5 +1,5 @@
-export function mergeDeep(target, source) {
-    const isObject = (obj) => obj && typeof obj === 'object';
+export function mergeDeep(target, source, mergeArrays = false) {
+    const isObject = (obj) => obj && typeof obj === 'object' && !Array.isArray(obj);
 
     if (!isObject(target) || !isObject(source)) {
         return source;
@@ -9,7 +9,7 @@ export function mergeDeep(target, source) {
         const targetValue = target[key];
         const sourceValue = source[key];
 
-        if (Array.isArray(targetValue) && Array.isArray(sourceValue)) {
+        if (mergeArrays && Array.isArray(targetValue) && Array.isArray(sourceValue)) {
             target[key] = targetValue.concat(sourceValue);
         } else if (isObject(targetValue) && isObject(sourceValue)) {
             target[key] = mergeDeep(Object.assign({}, targetValue), sourceValue);

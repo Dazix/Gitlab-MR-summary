@@ -50,6 +50,7 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async details => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message && message.command) {
+        let storage = new StorageManagerObject();
         switch (message.command) {
             case Messenger.GET_DOMAIN_DATA:
                 getDomainData(sender.url).then(domainData => {
@@ -66,9 +67,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     lock.set(url.origin + '_data_download')
                         .then(() => downloader.getData())
                         .then(downloadedData => {
+                            
                             sendResponse(downloadedData.getAsSimpleDataObject());
                             sendUpdatedDataToTabs(sender.url, downloadedData);
-                        }).catch(e => {
+                            return storage.setDomainData(sender.url, {mergeRequestsData: downloadedData.getAsSimpleDataObject()});
+                        })
+                        .then()
+                        .catch(e => {
                             if (e instanceof LockAlreadySetError) {
                                 sendResponse({
                                     message: 'Download already in progress.',
@@ -83,7 +88,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 });
                 break;
             case Messenger.SYNC_DATA_OVER_TABS:
-                let storage = new StorageManagerObject();
                 storage.setDomainData(sender.url, {mergeRequestsData: message.data})
                     .then(() => {
                         sendUpdatedDataToTabs(sender.url, message.data);
