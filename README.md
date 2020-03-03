@@ -32,11 +32,11 @@ Gitlab API is read/write and unfortunetly, you can't restrict your tokens only f
 ### Develop
 Run watch task 
 ```shell script
-$ docker build . -t gitlab-mr-summary
-$ docker run -v $(pwd):/app -ti --rm gitlab-mr-summary npm run develop
+$ docker-compose build
+$ docker-compose up
 ```
-Pack extension to zip file for distributing
+Pack extension to zip file for distributing (folder to `packed_extension`)
 ```shell script
-$ docker build . -t gitlab-mr-summary
-$ docker run -v $(pwd):/app -ti --rm gitlab-mr-summary npm run pack
+$ docker-compose build
+$ docker-compose -f docker-compose.yml -f docker-compose.pack.yml up
 ```

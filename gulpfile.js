@@ -43,7 +43,6 @@ function swallowError(error) {
 
 const clean = () => {
     return del([
-        'extension.zip',
         'build/**/*',
     ])
 };
@@ -62,7 +61,7 @@ const jsBuild = gulp.parallel(
 
 const makeZip = () => {
     return gulp.src('build/**/*')
-        .pipe(zip('extension.zip'))
+        .pipe(zip('./packed_extension/extension.zip'))
         .pipe(gulp.dest('.'));
 };
 
