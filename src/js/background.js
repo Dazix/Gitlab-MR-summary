@@ -5,6 +5,7 @@ import {LockAlreadySetError, OAuthAuthenticationFailedError} from "./errors";
 import Lock from "./lock";
 import StorageManagerObject from "./storageManagerObject";
 import Data from "./data";
+import {sleep} from "./utils";
 
 
 chrome.runtime.onInstalled.addListener((details) => {
@@ -34,6 +35,32 @@ chrome.runtime.onInstalled.addListener((details) => {
             }
         });
 });
+
+chrome.webRequest.onBeforeRedirect.addListener(async details => {
+    let domainData = null;
+    try {
+        domainData = await getDomainData(details.url);
+        if (domainData) {
+            let requestUrl = new URL(details.url);
+            let downloader = new Downloader(domainData);
+            let storage = new StorageManagerObject();
+            
+            // create mergeRequest
+            let matches = requestUrl.pathname.match(/^\/(\S+\/\S+)\/-\/merge_requests$/);
+            if (matches && matches[1] && details.method.toLowerCase() === 'post') { // TODO check method comparision
+                let projectNameWithPath = matches[1];
+                let newMergeRequests = await downloader.getMergeRequestsDataForProject(projectNameWithPath);
+                let dataObject = new Data(domainData.data.mergeRequestsData);
+                dataObject.updateMergeRequestsByNew(newMergeRequests);
+                await storage.setDomainData(details.url, dataObject.getAsSimpleDataObject());
+                await sleep(2000); // give some time to page load
+                sendUpdatedDataToTabs(details.url, dataObject.getAsSimpleDataObject())
+            }
+        }
+    } catch (e) {
+        console.debug(e);
+    }
+}, {urls: ["<all_urls>"]});
 
 chrome.webNavigation.onDOMContentLoaded.addListener(async details => {
     let data = null;
@@ -115,6 +142,10 @@ function sendUpdatedDataToTabs(url, data) {
     });
 }
 
+/**
+ * @param usersUrl
+ * @return {Promise<{data: {url: string, dummyUsersId: number[], cacheTime: number, mergeRequestsData: {mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}}, type: string, token: string}|{authPending: boolean}>}
+ */
 async function getDomainData(usersUrl) {
     let storage = new StorageManagerObject();
     if (usersUrl.indexOf('oauth/authorize') !== -1) {

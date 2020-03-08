@@ -9,7 +9,7 @@
         "scripts": [
             "background.js"
         ],
-        "persistent": false
+        "persistent": true
     },
 
     "icons": {
@@ -27,6 +27,7 @@
         "storage",
         "tabs",
         "webNavigation",
+        "webRequest",
         "identity"
     ],
     "optional_permissions": [

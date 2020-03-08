@@ -20,3 +20,11 @@ export function mergeDeep(target, source, mergeArrays = false) {
 
     return target;
 }
+
+/**
+ * @param {Number} ms
+ * @return {Promise<>}
+ */
+export function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}

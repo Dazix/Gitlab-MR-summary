@@ -11,7 +11,7 @@ export default class Data {
 
     /** @type {MergeRequest[]} */
     mergeRequests;
-    
+
     /** @type {string} */
     errorMessage;
 
@@ -46,15 +46,6 @@ export default class Data {
     get nonUsersMergeRequestsNotApproved() {
         let filterFunction = mr => !mr.approvedByUser;
         return this._filterMergeRequests(filterFunction, this.nonUsersMergeRequests)
-    }
-
-    /**
-     * @param {function} filterFunction
-     * @param {MergeRequest[]} mergeRequests
-     * @return {MergeRequest[]}
-     */
-    _filterMergeRequests(filterFunction, mergeRequests = this.mergeRequests) {
-        return mergeRequests.filter(mr => filterFunction(mr));
     }
 
     /**
@@ -96,6 +87,24 @@ export default class Data {
     }
 
     /**
+     * @param {MergeRequest[]} newMergeRequests
+     */
+    updateMergeRequestsByNew(newMergeRequests) {
+        let actualMergeRequestsUniqueIds = {};
+        this.mergeRequests.forEach((mergeRequest, index) => {
+            actualMergeRequestsUniqueIds[mergeRequest.uniqueId] = index;
+        });
+        
+        for (let newMergeRequest of newMergeRequests) {
+            if (newMergeRequest.uniqueId in actualMergeRequestsUniqueIds) {
+                this.mergeRequests[actualMergeRequestsUniqueIds[newMergeRequest.uniqueId]] = newMergeRequest;
+            } else {
+                this.mergeRequests.push(newMergeRequest);
+            }
+        }
+    }
+
+    /**
      * @return {{mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}}
      */
     getAsSimpleDataObject() {
@@ -104,6 +113,15 @@ export default class Data {
             user: this.user ? this.user.getAsSimpleDataObject() : this.user,
             mergeRequests: this.mergeRequests ? this.mergeRequests.map(mergeRequest => mergeRequest.getAsSimpleDataObject()) : this.mergeRequests,
         };
+    }
+
+    /**
+     * @param {function} filterFunction
+     * @param {MergeRequest[]} mergeRequests
+     * @return {MergeRequest[]}
+     */
+    _filterMergeRequests(filterFunction, mergeRequests = this.mergeRequests) {
+        return mergeRequests.filter(mr => filterFunction(mr));
     }
 
 }

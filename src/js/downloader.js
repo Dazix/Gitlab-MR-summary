@@ -2,6 +2,7 @@ import User from "./user";
 import Data from "./data";
 import GitlabApiUrls from "./gitlabApiUrls";
 import MergeRequest from "./mergeRequest";
+import {sleep} from "./utils";
 
 export default class Downloader {
     _gitlabAccessData;
@@ -21,15 +22,30 @@ export default class Downloader {
             this._loadProjects(),
         ])
             .then(data => this._loadMergeRequests(data[1]))
-            .then(data => this._enrichMergeRequestsByParticipants(data))
-            .then(data => this._enrichMergeRequestsParticipantsByApprovalsAndApprovers(data))
-            .then(data => this._removeNonRelevantMergeRequests(data))
+            .then(this._enrichMergeRequestsByParticipants.bind(this))
+            .then(this._enrichMergeRequestsParticipantsByApprovalsAndApprovers.bind(this))
+            .then(this._removeNonRelevantMergeRequests.bind(this))
             .then(data => {
                 this._downloadedData.mergeRequests = data;
                 this._downloadedData.age = new Date();
             });
 
         return this._downloadedData;
+    }
+
+    /**
+     * @param {string|number} projectId
+     * @return {Promise<MergeRequest[]>}
+     */
+    async getMergeRequestsDataForProject(projectId) {
+        return await Promise.all([
+            this._loadUsersData(), 
+            this._getProject(projectId)
+        ])
+            .then(data => this._loadMergeRequests([data[1]]))
+            .then(this._enrichMergeRequestsByParticipants.bind(this))
+            .then(this._enrichMergeRequestsParticipantsByApprovalsAndApprovers.bind(this))
+            .then(this._removeNonRelevantMergeRequests.bind(this));
     }
 
     runQueue(queue, concurrency = 5) {
@@ -219,13 +235,26 @@ export default class Downloader {
             let ret = await this._sendRequest(url.href);
             projects = projects.concat(ret);
 
-            await this._sleep(10);
+            await sleep(10);
             loadMoreProjects = ret.length === perPage;
 
             page++;
         } while (page < maxTries && loadMoreProjects);
 
         return projects;
+    }
+
+    /**
+     * @param {string|number} projectId
+     * @return {Promise<{}>}
+     * @private
+     */
+    async _getProject(projectId) {
+        if (typeof projectId === 'string') {
+            projectId = encodeURIComponent(projectId);
+        }
+        
+        return this._sendRequest(`${this.urls.projects}/${projectId}`);
     }
 
     /**
@@ -267,17 +296,10 @@ export default class Downloader {
             if (n === 1) {
                 throw err;
             }
-            await this._sleep(10);
+            await sleep(10);
             console.warn(`download attempt (${n}) ${url}`);
             return await this._sendRequest(url, n - 1);
         }
-    }
-
-    /**
-     * @param {Number} ms
-     */
-    _sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
 }
