@@ -142,35 +142,12 @@ class GitlabMRSummary {
                 // /<namespace>/<project>/-/find_file/master
                 projectPathWithNamespace = document.body.dataset.findFile.split('/').slice(1,3).join('/');
                 mergeRequestIID = document.body.dataset.pageTypeId;
-                mergeRequestUniqueIdFromPage = `${projectPathWithNamespace}-${mergeRequestIID}`;
             }
             
             if (targetElm.classList.contains('js-refresh-button')) {
                 this._showSpinnerIcon();
                 let data = await this._getData(true);
                 this._show(data);
-            } else if (targetElm.dataset.qaSelector === 'approve_button') {
-                this.#mergeRequestsData.mergeRequests =
-                    this.#mergeRequestsData.mergeRequests
-                        .map(mergeRequest => {
-                            if (mergeRequest.uniqueId === mergeRequestUniqueIdFromPage) {
-                                if (!targetElm.classList.contains('btn-inverted')) {
-                                    mergeRequest.approvedByUser = true;
-                                } else if (targetElm.classList.contains('btn-inverted')) {
-                                    mergeRequest.approvedByUser = false;
-                                }
-                            }
-                            return mergeRequest;
-                        });
-                await Messenger.send(Messenger.SYNC_DATA_OVER_TABS, this.#mergeRequestsData.getAsSimpleDataObject());
-            } else if (targetElm.classList.contains('qa-merge-button')) {
-                let mrButtonIcon = targetElm.querySelector('i');
-                if (mrButtonIcon && mrButtonIcon.classList.contains('fa-spinner')) {
-                    this.#mergeRequestsData.mergeRequests =
-                        this.#mergeRequestsData.mergeRequests
-                            .filter(mergeRequest => mergeRequest.uniqueId !== mergeRequestUniqueIdFromPage);
-                    await Messenger.send(Messenger.SYNC_DATA_OVER_TABS, this.#mergeRequestsData.getAsSimpleDataObject());
-                }
             }
         });
     }
