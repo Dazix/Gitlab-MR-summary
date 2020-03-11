@@ -11,6 +11,7 @@ import {sleep} from "./utils";
 chrome.runtime.onInstalled.addListener((details) => {
     let storage = new StorageManagerObject();
     if (details.reason === 'update') {
+        // fix compatibility with new version
         storage.get('domains')
             .then(domains => {
                 if (domains.length) {
@@ -26,6 +27,23 @@ chrome.runtime.onInstalled.addListener((details) => {
             .then(() => storage.remove('domains'))
             .catch((err) => {
                 console.debug(err);
+            });
+        // end - fix compatibility with new version
+
+        let newVersion = chrome.runtime.getManifest().version;
+        storage.get(`changelog_shown`)
+            .then(lastChangelogVersion => {
+                if (newVersion !== lastChangelogVersion) {
+                    chrome.tabs.create({url: chrome.extension.getURL('changelog/index.html')});
+                }
+            })
+            .catch(e => {
+                if (e.statusCode === StatusCodes.NO_DATA) {
+                    chrome.tabs.create({url: chrome.extension.getURL('changelog/index.html')});
+                }
+            })
+            .finally(() => {
+                storage.set({changelog_shown: newVersion});
             });
     }
     storage.get('options_shown')
