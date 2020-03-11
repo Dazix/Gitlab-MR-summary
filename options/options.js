@@ -152,7 +152,7 @@ class Options {
     }
 
     _obfuscateToken(token) {
-        return token.substr(0, 3) + '*****' + token.substr(token.length - 3, token.length);
+        return token.substr(0, 2) + '*****' + token.substr(token.length - 2, token.length);
     }
 
     async _saveNewOrUpdateDomain(domain, authType, token, dummyUsersId, cacheTime) {
