@@ -36,7 +36,10 @@ chrome.runtime.onInstalled.addListener((details) => {
         });
 });
 
-chrome.webRequest.onBeforeRedirect.addListener(async details => {
+chrome.webRequest.onCompleted.addListener(webRequestsCallback, {urls: ['<all_urls>']});
+chrome.webRequest.onBeforeRedirect.addListener(webRequestsCallback, {urls: ['<all_urls>']});
+
+async function webRequestsCallback(details) {
     let domainData = null;
     try {
         domainData = await getDomainData(details.url);
@@ -44,23 +47,46 @@ chrome.webRequest.onBeforeRedirect.addListener(async details => {
             let requestUrl = new URL(details.url);
             let downloader = new Downloader(domainData);
             let storage = new StorageManagerObject();
-            
+
             // create mergeRequest
             let matches = requestUrl.pathname.match(/^\/(\S+\/\S+)\/-\/merge_requests$/);
-            if (matches && matches[1] && details.method.toLowerCase() === 'post') { // TODO check method comparision
+            if (matches && matches[1] && details.method.toLowerCase() === 'post') {
                 let projectNameWithPath = matches[1];
                 let newMergeRequests = await downloader.getMergeRequestsDataForProject(projectNameWithPath);
                 let dataObject = new Data(domainData.data.mergeRequestsData);
                 dataObject.updateMergeRequestsByNew(newMergeRequests);
                 await storage.setDomainData(details.url, dataObject.getAsSimpleDataObject());
                 await sleep(2000); // give some time to page load
-                sendUpdatedDataToTabs(details.url, dataObject.getAsSimpleDataObject())
+                sendUpdatedDataToTabs(details.url, dataObject.getAsSimpleDataObject());
+                
+                return; 
+            }
+            
+            matches = requestUrl.pathname.match(/^\/api\/v4\/projects\/(\d+)\/merge_requests\/(\d+)\/(approve|unapprove)$/);
+            if (matches
+                && details.method.toLowerCase() === 'post'
+                && details.statusCode >= 200 && details.statusCode < 300
+            ) {
+                let [path, projectId, mergeRequestIid, action] = matches;
+                let dataObject = new Data(domainData.data.mergeRequestsData);
+                for (let mergeRequest of dataObject.mergeRequests) {
+                    if (mergeRequest.project.id === parseInt(projectId)
+                        && mergeRequest.iid === parseInt(mergeRequestIid)
+                    ) {
+                        mergeRequest.approvedByUser = action === 'approve';
+                        break;
+                    }
+                }
+                await storage.setDomainData(details.url, dataObject.getAsSimpleDataObject());
+                sendUpdatedDataToTabs(details.url, dataObject.getAsSimpleDataObject());
+                
+                return;
             }
         }
     } catch (e) {
         console.debug(e);
     }
-}, {urls: ["<all_urls>"]});
+}
 
 chrome.webNavigation.onDOMContentLoaded.addListener(async details => {
     let data = null;
