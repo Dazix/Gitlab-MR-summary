@@ -1,5 +1,5 @@
 @import (less) "../src/css/essentials.less";
-
+@import (less) "../src/css/utils.less";
 .scope-gitlab-mr-summary {
         
     .c-redirect-url{
@@ -58,4 +58,30 @@
                 color: #dc0030;
             }
         }
+
+    .c-hover-popup {
+        position: relative;
+        .c-hover-popup__content {
+            display: none;
+            position: absolute;
+            bottom: 0;
+            @media (min-width: 50em) {
+                right: 0;
+            }
+            @media (max-width: 50em) {
+                left: 0;
+            }
+            z-index: 999;
+
+            background: white;
+            box-shadow: 1px 1px 4px gray;
+            border-radius: 4px;
+            padding: 1em;
+            flex-direction: column;
+        }
+
+        &:hover > .c-hover-popup__content {
+            display: flex;
+        }
+    }
 }

@@ -34,8 +34,9 @@ class Options {
             let data = await this._loadData();
             if (data.message) return;
 
-            for (let domainSettings of data) {
+            for (let [index, domainSettings] of Object.entries(data)) {
                 this._insertRow(
+                    index,
                     domainSettings.url,
                     domainSettings.auth.type === 'private' ? 'Private token' : 'Gitlab OAuth',
                     this._obfuscateToken(domainSettings.auth.token),
@@ -132,18 +133,38 @@ class Options {
         tableBody.innerHTML = '';
     }
 
-    _insertRow(domain, authType, token, dummyUsersId, cacheTime) {
+    _insertRow(index, domain, authType, token, dummyUsersId, cacheTime) {
         let tableBody = document.querySelector('.js-sites-table__body');
-        tableBody.insertAdjacentHTML('afterbegin', this._renderRow(domain, authType, token, dummyUsersId, cacheTime));
+        tableBody.insertAdjacentHTML('afterbegin', this._renderRow(index, domain, authType, token, dummyUsersId, cacheTime));
     }
 
-    _renderRow(domain, authType, token, dummyUsersId, cacheTime) {
+    _renderRow(index, domain, authType, token, dummyUsersId, cacheTime, fixturesArr) {
         return `<tr>
                     <td>${domain}</td>
                     <td>${authType}</td>
                     <td>${token}</td>
                     <td><input class="js-input-dummy-user-id e-input" type="text" value="${dummyUsersId ? dummyUsersId.join(',') : ''}" pattern="^(\d+,?)*$"></td>
                     <td><input class="c-actual-domains__cache-time js-input-cache-time e-input" type="number" min="1" size="3" value="${cacheTime}"></td>
+                    <td class="c-hover-popup">
+                        <span class="e-action">select</span>
+                        <div class="c-hover-popup__content">
+                            <div class="c-form-cell c-form-cell--inline">
+                                <input class="e-input" id="fixture__commits-count-${index}" type="checkbox" value="commits-count" name="fixtures">
+                                <label for="fixture__commits-count-${index}" class="e-input e-input--faux" aria-hidden="true"></label>
+                                <label for="fixture__commits-count-${index}" class="u-text-no-wrap c-form-cell__label u-epsilon">Show commits count in merge button</label>
+                            </div>
+                            <div class="c-form-cell c-form-cell--inline">
+                                <input class="e-input" id="fixture__ci-cd-textarea-${index}" type="checkbox" value="ci-cd-textarea" name="fixtures">
+                                <label for="fixture__ci-cd-textarea-${index}" class="e-input e-input--faux" aria-hidden="true"></label>
+                                <label for="fixture__ci-cd-textarea-${index}" class="u-text-no-wrap c-form-cell__label u-epsilon">Expand CI/CD secrets textarea</label>
+                            </div>
+                            <div class="c-form-cell c-form-cell--inline">
+                                <input class="e-input" id="fixture__auto-check-delete-branch-${index}" type="checkbox" value="auto-check-merge" name="fixtures">
+                                <label for="fixture__auto-check-delete-branch-${index}" class="e-input e-input--faux" aria-hidden="true"></label>
+                                <label for="fixture__auto-check-delete-branch-${index}" class="u-text-no-wrap c-form-cell__label u-epsilon">Automatically check delete source branch in new-mergerequest page</label>
+                            </div>
+                        </div>
+                    </td>
                     <td class="c-actual-domains__buttons">
                         <button class="c-actual-domains__button js-update-button e-button e-button--positive" name="update" value="${domain}">UPDATE</button>
                         <button class="c-actual-domains__button js-del-button e-button e-button--negative" name="del" value="${domain}">DELETE</button>
