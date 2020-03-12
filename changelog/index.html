@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Changelog</title>
+    <link href="./style.css" rel="stylesheet">
+</head>
+<body class="scope-changelog scope-essentials-v1.50.0">
+    <div class="c-changelog o-wrapper o-wrapper--line">
+        <h1 class="c-changelog__heading e-heading u-beta u-align-center">Gitlab Mergerequests Summary</h1>
+        <h2 class="e-heading u-gamma">Changelog</h2>
+        <section class="c-changelog__item">
+            <header>
+                <h2 class="e-heading u-delta">v2.0.0</h2>
+                <span class="c-changelog__notice u-milli">2020/03/11</span>
+            </header>
+            <p>
+                Version <span class="u-bold">2.0.0</span> is really a major update. The whole logic has been rewritten
+                so data doesn't have to be downloaded on every page load, but instead is downloaded in the background
+                and stored locally for a user-specified time. When the user makes an update or change (approve / disapprove),
+                the data is synchronized between all Gitlab tabs, so there is no need to reload the page on any tabs already open.
+            </p>
+            <h3 class="e-heading u-bold">In short</h3>
+            <ul class="c-changelog__summary c-bullet-list">
+                <li class="c-bullet-list__item">local merge-requests data caching</li>
+                <li class="c-bullet-list__item">background data downloading</li>
+                <li class="c-bullet-list__item">tabs syncing</li>
+                <li class="c-bullet-list__item">user actions (approve/revoke approve & merge-request creation)</li>
+            </ul>
+        </section>
+    </div>
+</body>
+</html>

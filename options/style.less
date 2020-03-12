@@ -1,23 +1,61 @@
-@import (less) "../lib/css/essentials.less";
+@import (less) "../src/css/essentials.less";
 
-.c-redirect-url{
-    background: aqua;
-    padding: 0.3em 0.5em;
-    border-radius: 0.4em;
-    position: relative;
-    &:before {
-        content: 'Extension redirect url: ';
+.scope-gitlab-mr-summary {
+        
+    .c-redirect-url{
+        background: aqua;
+        padding: 0.3em 0.5em;
+        border-radius: 0.4em;
+        position: relative;
+        &:before {
+            content: 'Extension redirect url: ';
+        }
     }
-}
-
-.c-copy-button {
-    margin-left: 1em;
-}
-
-input:not(checked) ~ .c-redirect-url {
-    display: none;
-}
-
-input:checked ~ .c-redirect-url {
-    display: block;
+    
+    .c-copy-button {
+        margin-left: 1em;
+    }
+    
+    .c-redirect-url {
+        display: none;
+    }
+    
+    input:checked ~ .c-redirect-url {
+        display: block;
+    }
+    
+    .c-auth-type-token-label {
+        display: none;
+        margin-top: 0;
+        &.is-active {
+            display: inline-block;
+        }
+    }
+    
+    .c-actual-domains {}
+        .c-actual-domains__buttons {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: start;
+            margin-top: 0;
+        }
+            .c-actual-domains__button {
+                margin-top: 0;
+                &:not(:last-child) {
+                    margin-right: .4em;
+                }
+            }
+            
+            .c-actual-domains__cache-time {
+                width: 4.5em;
+            }
+        .c-actual-domains__info-row {
+            text-align: center;
+            &--success {
+                color: #1ab04c;
+            }
+            &--error {
+                color: #dc0030;
+            }
+        }
 }

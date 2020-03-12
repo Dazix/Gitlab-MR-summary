@@ -1,0 +1,17 @@
+version: '3'
+services:
+  gitlab-mr-summary:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: 'npm run develop'
+    volumes:
+      - ./build/:/app/build/
+      - ./images/:/app/images/
+      - ./options/:/app/options/
+      - ./src/:/app/src/
+      - ./.babelrc:/app/.babelrc
+      - ./gulpfile.js:/app/gulpfile.js
+      - ./manifest.json:/app/manifest.json
+      - ./package.json:/app/package.json
+      - ./rollup.config.js:/app/rollup.config.js

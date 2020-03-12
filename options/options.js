@@ -1,8 +1,11 @@
+import StorageManagerObject from "../src/js/storageManagerObject";
+import PermissionsManager from "../src/js/permissions-manager";
+
 class Options {
 
     /**
-     * @param storage
-     * @param {PermissionsManagerClass} permissionManager
+     * @param {StorageManagerObject} storage
+     * @param {PermissionsManager} permissionManager
      */
     constructor(storage, permissionManager) {
         this.storage = storage;
@@ -10,7 +13,19 @@ class Options {
         this._init();
         this._insertRedirectUrl();
         this._observeAdd();
-        this._observeDel();
+        this._observeUpdate();
+        
+        for (let input of document.querySelectorAll('.js-auth-type-input')) {
+            input.addEventListener('change', evt => {
+                for (let label of document.querySelectorAll('.js-auth-type-token-label')) {
+                    if (label.dataset.type === evt.target.value) {
+                        label.classList.add('is-active');
+                    } else {
+                        label.classList.remove('is-active');
+                    }
+                }
+            });
+        }
     }
 
     async _init() {
@@ -22,12 +37,14 @@ class Options {
             for (let domainSettings of data) {
                 this._insertRow(
                     domainSettings.url,
-                    domainSettings.authType === 'private' ? 'Private token' : 'Gitlab OAuth',
-                    this._obfuscateToken(domainSettings.token)
+                    domainSettings.auth.type === 'private' ? 'Private token' : 'Gitlab OAuth',
+                    this._obfuscateToken(domainSettings.auth.token),
+                    domainSettings.dummyUsersId,
+                    domainSettings.cacheTime,
                 );
             }
         } catch (e) {
-            console.log(e);
+            console.error(e);
         }
     }
 
@@ -50,20 +67,27 @@ class Options {
             let tokenInput = document.querySelector('.js-form-add__token');
             if (domainInput.checkValidity() && tokenInput.checkValidity()) {
                 let domainUrl = (new URL(formData.get('domain'))).toString();
+                let dummyUsersId = formData.get('dummy-users-id') ? formData.get('dummy-users-id').split(',').map(id => parseInt(id)) : [];
                 let saveDomain = () => {
-                    return this._saveNewDomain(domainUrl, formData.get('auth_type'), formData.get('token'));
+                    return this._saveNewOrUpdateDomain(
+                        domainUrl,
+                        formData.get('auth_type'),
+                        formData.get('token'),
+                        dummyUsersId,
+                        parseInt(formData.get('cache-time'))
+                    );
                 };
                 this.permissionManager.request([], [domainUrl])
                     .then(saveDomain.bind(this))
                     .then(this._init.bind(this))
                     .then(() => form.reset())
-                    .catch(err => console.debug(err));
+                    .catch(err => console.error(err));
             }
         });
     }
 
-    _observeDel() {
-        let form = document.querySelector('.js-form-del');
+    _observeUpdate() {
+        let form = document.querySelector('.js-form-actual-settings');
         form.addEventListener('click', evt => {
             if (evt.target.classList.contains('js-del-button')) {
                 evt.preventDefault();
@@ -73,6 +97,32 @@ class Options {
                 this._deleteDomain(evt.target.value)
                     .then(remove.bind(this))
                     .then(this._init.bind(this));
+            } else if (evt.target.classList.contains('js-update-button')) {
+                evt.preventDefault();
+                let row = evt.target.closest('tr');
+                let dummyUsersId = row.querySelector('.js-input-dummy-user-id').value;
+                dummyUsersId = dummyUsersId ? dummyUsersId.split(',').map(id => parseInt(id)) : [];
+                let cacheTime = parseInt(row.querySelector('.js-input-cache-time').value);
+                let showInfoRow = (message, type = 'success') => {
+                    let colSpanNum = row.children.length;
+                    let newRow = document.createElement('tr');
+                    newRow.classList.add(`c-actual-domains__info-row`, `c-actual-domains__info-row--${type}`);
+                    newRow.innerHTML = `<td colspan="${colSpanNum}" class="u-bold">${message}</td>`;
+
+                    row.insertAdjacentElement('beforebegin', newRow);
+                    setTimeout(() => newRow.remove(), 2000);
+                };
+                this._saveNewOrUpdateDomain(
+                    evt.target.value,
+                    null,
+                    null,
+                    dummyUsersId,
+                    cacheTime
+                ).then(() => {
+                    showInfoRow('Successfully updated.');
+                }).catch(() => {
+                    showInfoRow('Failed to update values.', 'error');
+                });
             }
         });
     }
@@ -82,82 +132,68 @@ class Options {
         tableBody.innerHTML = '';
     }
 
-    _insertRow(domain, authType, token) {
+    _insertRow(domain, authType, token, dummyUsersId, cacheTime) {
         let tableBody = document.querySelector('.js-sites-table__body');
-        tableBody.insertAdjacentHTML('afterbegin', this._renderRow(domain, authType, token));
+        tableBody.insertAdjacentHTML('afterbegin', this._renderRow(domain, authType, token, dummyUsersId, cacheTime));
     }
 
-    _renderRow(domain, authType, token) {
+    _renderRow(domain, authType, token, dummyUsersId, cacheTime) {
         return `<tr>
                     <td>${domain}</td>
                     <td>${authType}</td>
                     <td>${token}</td>
-                    <td><button class="js-del-button e-button e-button--negative" name="del" value="${domain}">delete</button></td>
+                    <td><input class="js-input-dummy-user-id e-input" type="text" value="${dummyUsersId ? dummyUsersId.join(',') : ''}" pattern="^(\d+,?)*$"></td>
+                    <td><input class="c-actual-domains__cache-time js-input-cache-time e-input" type="number" min="1" size="3" value="${cacheTime}"></td>
+                    <td class="c-actual-domains__buttons">
+                        <button class="c-actual-domains__button js-update-button e-button e-button--positive" name="update" value="${domain}">UPDATE</button>
+                        <button class="c-actual-domains__button js-del-button e-button e-button--negative" name="del" value="${domain}">DELETE</button>
+                    </td>
                 </tr>`;
     }
 
     _obfuscateToken(token) {
-        return token.substr(0, 4) + '*****' + token.substr(token.length - 4, token.length);
+        return token.substr(0, 2) + '*****' + token.substr(token.length - 2, token.length);
     }
 
-    _saveNewDomain(domain, authType, token) {
-        return this._loadData()
-            .then(data => {
-                let updated = false;
-                for (let domainData of data) {
-                    if (domainData.url === domain) {
-                        domainData.token = token;
-                        domainData.authType = authType;
-                        updated = true;
-                    }
-                }
-
-                if (!updated) {
-                    data.push({
-                        url: domain,
-                        authType: authType,
-                        token: token,
-                    });
-                }
-
-                return data;
-            }).then(this._saveData.bind(this))
-            .catch(err => console.error(err));
+    async _saveNewOrUpdateDomain(domain, authType, token, dummyUsersId, cacheTime) {
+        try {
+            let data = {};
+            let auth = {};
+            if (authType || token) {
+                authType && (auth.type = authType);
+                token && (auth.token = token);
+                data.auth = auth;
+            }
+            data.dummyUsersId = dummyUsersId;
+            data.cacheTime = cacheTime;
+            data.url = domain;
+            
+            await this._saveData(domain, data);
+        } catch (e) {
+            console.error(e);
+        }
     }
 
-    _deleteDomain(domain) {
-        return this._loadData()
-            .then(data => data.filter(domainData => domainData.url !== domain))
-            .then(this._saveData.bind(this))
-            .catch(err => console.error(err));
+    async _deleteDomain(domain) {
+        return await this.storage.remove(this.storage.getKeyFromUrl(domain));
     }
     
-    _loadData() {
-        return new Promise((resolve, reject) => {
-            this.storage.get(['domains'], result => {
-                if (result['domains']) {
-                    resolve(result['domains']);
-                } else {
-                    resolve([])
-                }
-            });
-        });
+    async _loadData() {
+        let domains = [];
+        try {
+            domains = await this.storage.getDomainData();
+        } catch (e) {}
+        
+        return domains;
     }
 
-    _saveData(data) {
-        return new Promise((resolve, reject) => {
-            this.storage.set({domains: data}, res => {
-                if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError);
-                } else {
-                    resolve();
-                }
-            })
-        });
+    async _saveData(url, data) {
+        await this.storage.setDomainData(url, data);
     }
 
 }
 
-let options = new Options(chrome.storage.local, PermissionsManager);
+let storage = new StorageManagerObject();
+new Options(storage, new PermissionsManager());
 
-chrome.storage.local.set({options_shown: true});
+storage.set({options_shown: true});

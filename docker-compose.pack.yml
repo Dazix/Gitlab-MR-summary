@@ -1,0 +1,6 @@
+version: '3'
+services:
+  gitlab-mr-summary:
+    command: 'npm run pack'
+    volumes:
+      - ./packed_extension/:/app/packed_extension/
