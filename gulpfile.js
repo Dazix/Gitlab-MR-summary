@@ -52,6 +52,7 @@ const moveStaticSource = gulp.parallel(
     function copyOptions() {return gulp.src(['options/**/*.html',]).pipe(gulp.dest('./build/options'))},
     function copyChangelog() {return gulp.src(['changelog/**/*.html',]).pipe(gulp.dest('./build/changelog'))},
     function copyImages() {return gulp.src(['images/**/*', '!images/readme/**/*',]).pipe(gulp.dest('./build/images'))},
+    function copyImages() {return gulp.src(['src/**/*.woff2',]).pipe(gulp.dest('./build/'))},
 );
 
 const jsBuild = gulp.parallel(
