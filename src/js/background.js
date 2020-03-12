@@ -33,7 +33,9 @@ chrome.runtime.onInstalled.addListener((details) => {
         let newVersion = chrome.runtime.getManifest().version;
         storage.get(`changelog_shown`)
             .then(lastChangelogVersion => {
-                if (newVersion !== lastChangelogVersion) {
+                let removeFixPart = version => version.substr(0, version.lastIndexOf('.')); 
+                
+                if (removeFixPart(newVersion) !== removeFixPart(lastChangelogVersion)) {
                     chrome.tabs.create({url: chrome.extension.getURL('changelog/index.html')});
                 }
             })
