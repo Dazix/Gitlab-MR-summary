@@ -6,6 +6,7 @@ import Lock from "./lock";
 import StorageManagerObject from "./storageManagerObject";
 import Data from "./data";
 import {sleep} from "./utils";
+import {getAvailableFixture} from "./fixtures";
 
 
 chrome.runtime.onInstalled.addListener((details) => {
@@ -63,7 +64,7 @@ async function webRequestsCallback(details) {
     let domainData = null;
     try {
         domainData = await getDomainData(details.url);
-        if (domainData) {
+        if (domainData.token) {
             let requestUrl = new URL(details.url);
             let downloader = new Downloader(domainData);
             let storage = new StorageManagerObject();
@@ -126,12 +127,25 @@ async function webRequestsCallback(details) {
 }
 
 chrome.webNavigation.onDOMContentLoaded.addListener(async details => {
-    let data = null;
+    let domainData = null;
     try {
-        data = await getDomainData(details.url);
-        if (data) {
-            await executeScript(details.tabId, 'gitlab-mr-summary.js')
-                .then(() => insertCss(details.tabId, 'gitlab-mr-summary.css'))
+        domainData = await getDomainData(details.url);
+        if (domainData) {
+            if (domainData.token) {
+                await executeScript(details.tabId, 'gitlab-mr-summary.js')
+                    .then(() => insertCss(details.tabId, 'gitlab-mr-summary.css'));
+            }
+
+            if (domainData.data.fixtures
+                && domainData.data.fixtures.length
+            ) {
+                let fixturesToRun = getAvailableFixture(domainData.data.fixtures, details.url),
+                    promises = [];
+                for (let fileName of fixturesToRun) {
+                    promises.push(executeScript(details.tabId, `fixtures/${fileName}`));
+                }
+                await Promise.all(promises);
+            }
         }
     } catch (e) {
         console.debug(e);
@@ -227,12 +241,14 @@ async function getDomainData(usersUrl) {
         data: domainData,
     };
 
-    if (authData.type === 'private') {
-        returnData.token = authData.token;
-        returnData.type = authData.type;
-    } else {
-        let oAuthData = await gitlabOAuthAuthentication(domainData.url, authData);
-        Object.assign(returnData, oAuthData);
+    if (authData.token) {
+        if (authData.type === 'private') {
+            returnData.token = authData.token;
+            returnData.type = authData.type;
+        } else {
+            let oAuthData = await gitlabOAuthAuthentication(domainData.url, authData);
+            Object.assign(returnData, oAuthData);
+        }
     }
 
     return returnData;

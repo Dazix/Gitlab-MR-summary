@@ -1,5 +1,6 @@
 import StorageManagerObject from "../src/js/storageManagerObject";
 import PermissionsManager from "../src/js/permissions-manager";
+import {renderFixtureInputs} from "../src/js/fixtures";
 
 class Options {
 
@@ -10,6 +11,8 @@ class Options {
     constructor(storage, permissionManager) {
         this.storage = storage;
         this.permissionManager = permissionManager;
+        document.querySelector('.js-fixtures-cont')
+            .insertAdjacentHTML('beforeend', renderFixtureInputs());
         this._init();
         this._insertRedirectUrl();
         this._observeAdd();
@@ -38,10 +41,11 @@ class Options {
                 this._insertRow(
                     index,
                     domainSettings.url,
-                    domainSettings.auth.type === 'private' ? 'Private token' : 'Gitlab OAuth',
-                    this._obfuscateToken(domainSettings.auth.token),
+                    domainSettings.auth.token ? (domainSettings.auth.type === 'private' ? 'Private token' : 'Gitlab OAuth') : '',
+                    domainSettings.auth.token ? this._obfuscateToken(domainSettings.auth.token) : '',
                     domainSettings.dummyUsersId,
                     domainSettings.cacheTime,
+                    domainSettings.fixtures
                 );
             }
         } catch (e) {
@@ -75,7 +79,8 @@ class Options {
                         formData.get('auth_type'),
                         formData.get('token'),
                         dummyUsersId,
-                        parseInt(formData.get('cache-time'))
+                        parseInt(formData.get('cache-time')),
+                        formData.getAll('fixtures')
                     );
                 };
                 this.permissionManager.request([], [domainUrl])
@@ -104,6 +109,8 @@ class Options {
                 let dummyUsersId = row.querySelector('.js-input-dummy-user-id').value;
                 dummyUsersId = dummyUsersId ? dummyUsersId.split(',').map(id => parseInt(id)) : [];
                 let cacheTime = parseInt(row.querySelector('.js-input-cache-time').value);
+                let fixtures = [].filter.call(row.querySelectorAll('input[name="fixtures"]'), input => input.checked)
+                    .map(input => input.value);
                 let showInfoRow = (message, type = 'success') => {
                     let colSpanNum = row.children.length;
                     let newRow = document.createElement('tr');
@@ -118,7 +125,8 @@ class Options {
                     null,
                     null,
                     dummyUsersId,
-                    cacheTime
+                    cacheTime,
+                    fixtures
                 ).then(() => {
                     showInfoRow('Successfully updated.');
                 }).catch(() => {
@@ -133,12 +141,13 @@ class Options {
         tableBody.innerHTML = '';
     }
 
-    _insertRow(index, domain, authType, token, dummyUsersId, cacheTime) {
+    _insertRow(index, domain, authType, token, dummyUsersId, cacheTime, selectedFixtures) {
         let tableBody = document.querySelector('.js-sites-table__body');
-        tableBody.insertAdjacentHTML('afterbegin', this._renderRow(index, domain, authType, token, dummyUsersId, cacheTime));
+        tableBody.insertAdjacentHTML('afterbegin', this._renderRow(index, domain, authType, token, dummyUsersId, cacheTime, selectedFixtures));
     }
 
-    _renderRow(index, domain, authType, token, dummyUsersId, cacheTime, fixturesArr) {
+    _renderRow(index, domain, authType, token, dummyUsersId, cacheTime, selectedFixtures) {
+        selectedFixtures = selectedFixtures || [];
         return `<tr>
                     <td>${domain}</td>
                     <td>${authType}</td>
@@ -148,21 +157,7 @@ class Options {
                     <td class="c-hover-popup">
                         <span class="e-action">select</span>
                         <div class="c-hover-popup__content">
-                            <div class="c-form-cell c-form-cell--inline">
-                                <input class="e-input" id="fixture__commits-count-${index}" type="checkbox" value="commits-count" name="fixtures">
-                                <label for="fixture__commits-count-${index}" class="e-input e-input--faux" aria-hidden="true"></label>
-                                <label for="fixture__commits-count-${index}" class="u-text-no-wrap c-form-cell__label u-epsilon">Show commits count in merge button</label>
-                            </div>
-                            <div class="c-form-cell c-form-cell--inline">
-                                <input class="e-input" id="fixture__ci-cd-textarea-${index}" type="checkbox" value="ci-cd-textarea" name="fixtures">
-                                <label for="fixture__ci-cd-textarea-${index}" class="e-input e-input--faux" aria-hidden="true"></label>
-                                <label for="fixture__ci-cd-textarea-${index}" class="u-text-no-wrap c-form-cell__label u-epsilon">Expand CI/CD secrets textarea</label>
-                            </div>
-                            <div class="c-form-cell c-form-cell--inline">
-                                <input class="e-input" id="fixture__auto-check-delete-branch-${index}" type="checkbox" value="auto-check-merge" name="fixtures">
-                                <label for="fixture__auto-check-delete-branch-${index}" class="e-input e-input--faux" aria-hidden="true"></label>
-                                <label for="fixture__auto-check-delete-branch-${index}" class="u-text-no-wrap c-form-cell__label u-epsilon">Automatically check delete source branch in new-mergerequest page</label>
-                            </div>
+                            ${renderFixtureInputs(selectedFixtures, true)}
                         </div>
                     </td>
                     <td class="c-actual-domains__buttons">
@@ -176,7 +171,7 @@ class Options {
         return token.substr(0, 2) + '*****' + token.substr(token.length - 2, token.length);
     }
 
-    async _saveNewOrUpdateDomain(domain, authType, token, dummyUsersId, cacheTime) {
+    async _saveNewOrUpdateDomain(domain, authType, token, dummyUsersId, cacheTime, fixtures) {
         try {
             let data = {};
             let auth = {};
@@ -188,6 +183,7 @@ class Options {
             data.dummyUsersId = dummyUsersId;
             data.cacheTime = cacheTime;
             data.url = domain;
+            data.fixtures = fixtures;
             
             await this._saveData(domain, data);
         } catch (e) {

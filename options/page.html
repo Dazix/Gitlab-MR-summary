@@ -37,7 +37,7 @@
                                 <span class="c-auth-type-token-label is-active js-auth-type-token-label u-text-no-wrap" data-type="private">Private token:</span>
                                 <span class="c-auth-type-token-label js-auth-type-token-label u-text-no-wrap" data-type="oauth">App ID:</span>
                             </label> 
-                            <input class="u-width-half@gtLine e-input js-form-add__token" id="input2" type="password" name="token" autocomplete="off" required>
+                            <input class="u-width-half@gtLine e-input js-form-add__token" id="input2" type="password" name="token" autocomplete="off">
                         </div>
                         <div class="o-layout o-layout--equal">
                             <fieldset class="o-layout__item">
@@ -55,23 +55,8 @@
                                     <input class="e-input" id="cache-time-input" type="number" min="1" value="8" name="cache-time">
                                 </div>
                             </fieldset>
-                            <fieldset class="o-layout__item">
+                            <fieldset class="o-layout__item js-fixtures-cont">
                                 <legend class="u-text-no-wrap u-gamma">Gitlab Fixtures</legend>
-                                <div class="c-form-cell c-form-cell--inline">
-                                    <input class="e-input" id="fixture__commits-count" type="checkbox" value="commits-count" name="fixtures">
-                                    <label for="fixture__commits-count" class="e-input e-input--faux" aria-hidden="true"></label>
-                                    <label for="fixture__commits-count" class="c-form-cell__label u-epsilon">Show commits count in merge button</label>
-                                </div>
-                                <div class="c-form-cell c-form-cell--inline">
-                                    <input class="e-input" id="fixture__ci-cd-textarea" type="checkbox" value="ci-cd-textarea" name="fixtures">
-                                    <label for="fixture__ci-cd-textarea" class="e-input e-input--faux" aria-hidden="true"></label>
-                                    <label for="fixture__ci-cd-textarea" class="c-form-cell__label u-epsilon">Expand CI/CD secrets textarea</label>
-                                </div>
-                                <div class="c-form-cell c-form-cell--inline">
-                                    <input class="e-input" id="fixture__auto-check-delete-branch" type="checkbox" value="auto-check-merge" name="fixtures">
-                                    <label for="fixture__auto-check-delete-branch" class="e-input e-input--faux" aria-hidden="true"></label>
-                                    <label for="fixture__auto-check-delete-branch" class="c-form-cell__label u-epsilon">Automatically check delete source branch in new-mergerequest page</label>
-                                </div>
                             </fieldset>
                         </div>
                     </fieldset>

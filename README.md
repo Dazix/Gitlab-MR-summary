@@ -28,6 +28,17 @@ Gitlab API is read/write and unfortunetly, you can't restrict your tokens only f
 </p>
 
 
+### Gitlab Fixtures
+A collection of several scripts that make working with gitlab a little more comfortable.
+1. Show commits count in merge button
+![commits count](images/readme/fixture__commits-count.png)
+If you are used to squash commits before merging and sometimes you forget it, first fixture will help a little bit.
+2. Expand CI/CD secrets textarea
+![expand secrets textarea](images/readme/fixture__expand-textarea.png)
+The second fixture helps you with small unresizable textareas in Settings > CI/CD > Variables, now they will be bigger for better readability of values.
+3. Automatically check delete source branch in new-mergerequest page
+![auto check delete branch](images/readme/fixture__auto-check-delete-branch.png)
+And third one automatically check option *Delete source branch when merge request is accepted* on merge request create page.
 
 ### Develop
 Run watch task 
