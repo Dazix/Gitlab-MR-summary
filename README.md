@@ -16,16 +16,14 @@ Gitlab API is read/write and unfortunetly, you can't restrict your tokens only f
     - for [chrome](https://chrome.google.com/webstore/detail/gitlab-mr-summary/gekiikmjljplpkcmheahicdcbblkafki)
     - for [firefox](https://addons.mozilla.org/en-US/firefox/addon/gitlab-mr-summary/)
 2. Set options of your Gitlab
-    <img align="right" width="320" height="167" src="images/readme/settings.png">
+    <img align="right" width="320" height="300" src="images/readme/settings.png">
     - for auth you can use 
         - [private access token](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
         - [OAuth2](https://docs.gitlab.com/ee/integration/oauth_provider.html)
             - redirect URI displays when you check this option
             - OAuth flow pops up when you first come to entered Gitlab domain
 3. Go to your Gitlab domain and profit!
-<p align="center">
-  <img width="640" height="400" src="images/readme/preview.png">
-</p>
+<img width="412" height="257" src="images/readme/preview.png">
 
 
 ### Gitlab Fixtures
