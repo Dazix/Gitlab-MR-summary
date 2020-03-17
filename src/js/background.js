@@ -6,6 +6,7 @@ import Lock from "./lock";
 import StorageManagerObject from "./storageManagerObject";
 import Data from "./data";
 import {sleep} from "./utils";
+import {getAvailableFixture} from "./fixtures";
 
 
 chrome.runtime.onInstalled.addListener((details) => {
@@ -63,23 +64,40 @@ async function webRequestsCallback(details) {
     let domainData = null;
     try {
         domainData = await getDomainData(details.url);
-        if (domainData) {
+        if (domainData.token) {
             let requestUrl = new URL(details.url);
             let downloader = new Downloader(domainData);
             let storage = new StorageManagerObject();
+            let dataObject = new Data(domainData.data.mergeRequestsData);
 
             // create mergeRequest
-            let matches = requestUrl.pathname.match(/^\/(\S+\/\S+)\/-\/merge_requests$/);
+            let matches = requestUrl.pathname.match(/^\/(\S+)\/-\/merge_requests$/);
             if (matches && matches[1] && details.method.toLowerCase() === 'post') {
                 let projectNameWithPath = matches[1];
                 let newMergeRequests = await downloader.getMergeRequestsDataForProject(projectNameWithPath);
-                let dataObject = new Data(domainData.data.mergeRequestsData);
                 dataObject.updateMergeRequestsByNew(newMergeRequests);
+                
                 await storage.setDomainData(details.url, dataObject.getAsSimpleDataObject());
                 await sleep(2000); // give some time to page load
                 sendUpdatedDataToTabs(details.url, dataObject.getAsSimpleDataObject());
                 
                 return; 
+            }
+            
+            // merge mergeRequest
+            matches = requestUrl.pathname.match(/^\/(\S+)\/-\/merge_requests\/(\d+)\/merge$/);
+            if (matches
+                && details.method.toLowerCase() === 'post'
+                && details.statusCode >= 200 && details.statusCode < 300
+            ) {
+                let [path, projectPathWithNamespace, mergeRequestIid] = matches;
+                dataObject.mergeRequests = dataObject.mergeRequests
+                    .filter(mergeRequest => mergeRequest.project.pathWithNamespace !== projectPathWithNamespace && mergeRequest.iid !== mergeRequestIid);
+                
+                await storage.setDomainData(details.url, dataObject.getAsSimpleDataObject());
+                sendUpdatedDataToTabs(details.url, dataObject.getAsSimpleDataObject());
+                
+                return;
             }
             
             matches = requestUrl.pathname.match(/^\/api\/v4\/projects\/(\d+)\/merge_requests\/(\d+)\/(approve|unapprove)$/);
@@ -88,7 +106,6 @@ async function webRequestsCallback(details) {
                 && details.statusCode >= 200 && details.statusCode < 300
             ) {
                 let [path, projectId, mergeRequestIid, action] = matches;
-                let dataObject = new Data(domainData.data.mergeRequestsData);
                 for (let mergeRequest of dataObject.mergeRequests) {
                     if (mergeRequest.project.id === parseInt(projectId)
                         && mergeRequest.iid === parseInt(mergeRequestIid)
@@ -97,6 +114,7 @@ async function webRequestsCallback(details) {
                         break;
                     }
                 }
+                
                 await storage.setDomainData(details.url, dataObject.getAsSimpleDataObject());
                 sendUpdatedDataToTabs(details.url, dataObject.getAsSimpleDataObject());
                 
@@ -109,12 +127,25 @@ async function webRequestsCallback(details) {
 }
 
 chrome.webNavigation.onDOMContentLoaded.addListener(async details => {
-    let data = null;
+    let domainData = null;
     try {
-        data = await getDomainData(details.url);
-        if (data) {
-            await executeScript(details.tabId, 'gitlab-mr-summary.js')
-                .then(() => insertCss(details.tabId, 'gitlab-mr-summary.css'))
+        domainData = await getDomainData(details.url);
+        if (domainData) {
+            if (domainData.token) {
+                await executeScript(details.tabId, 'gitlab-mr-summary.js')
+                    .then(() => insertCss(details.tabId, 'gitlab-mr-summary.css'));
+            }
+
+            if (domainData.data.fixtures
+                && domainData.data.fixtures.length
+            ) {
+                let fixturesToRun = getAvailableFixture(domainData.data.fixtures, details.url),
+                    promises = [];
+                for (let fileName of fixturesToRun) {
+                    promises.push(executeScript(details.tabId, `fixtures/${fileName}`));
+                }
+                await Promise.all(promises);
+            }
         }
     } catch (e) {
         console.debug(e);
@@ -210,12 +241,14 @@ async function getDomainData(usersUrl) {
         data: domainData,
     };
 
-    if (authData.type === 'private') {
-        returnData.token = authData.token;
-        returnData.type = authData.type;
-    } else {
-        let oAuthData = await gitlabOAuthAuthentication(domainData.url, authData);
-        Object.assign(returnData, oAuthData);
+    if (authData.token) {
+        if (authData.type === 'private') {
+            returnData.token = authData.token;
+            returnData.type = authData.type;
+        } else {
+            let oAuthData = await gitlabOAuthAuthentication(domainData.url, authData);
+            Object.assign(returnData, oAuthData);
+        }
     }
 
     return returnData;

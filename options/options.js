@@ -1,5 +1,6 @@
 import StorageManagerObject from "../src/js/storageManagerObject";
 import PermissionsManager from "../src/js/permissions-manager";
+import {renderFixtureInputs} from "../src/js/fixtures";
 
 class Options {
 
@@ -10,6 +11,8 @@ class Options {
     constructor(storage, permissionManager) {
         this.storage = storage;
         this.permissionManager = permissionManager;
+        document.querySelector('.js-fixtures-cont')
+            .insertAdjacentHTML('beforeend', renderFixtureInputs());
         this._init();
         this._insertRedirectUrl();
         this._observeAdd();
@@ -34,13 +37,15 @@ class Options {
             let data = await this._loadData();
             if (data.message) return;
 
-            for (let domainSettings of data) {
+            for (let [index, domainSettings] of Object.entries(data)) {
                 this._insertRow(
+                    index,
                     domainSettings.url,
-                    domainSettings.auth.type === 'private' ? 'Private token' : 'Gitlab OAuth',
-                    this._obfuscateToken(domainSettings.auth.token),
+                    domainSettings.auth.token ? (domainSettings.auth.type === 'private' ? 'Private token' : 'Gitlab OAuth') : '',
+                    domainSettings.auth.token ? this._obfuscateToken(domainSettings.auth.token) : '',
                     domainSettings.dummyUsersId,
                     domainSettings.cacheTime,
+                    domainSettings.fixtures
                 );
             }
         } catch (e) {
@@ -74,7 +79,8 @@ class Options {
                         formData.get('auth_type'),
                         formData.get('token'),
                         dummyUsersId,
-                        parseInt(formData.get('cache-time'))
+                        parseInt(formData.get('cache-time')),
+                        formData.getAll('fixtures')
                     );
                 };
                 this.permissionManager.request([], [domainUrl])
@@ -103,6 +109,8 @@ class Options {
                 let dummyUsersId = row.querySelector('.js-input-dummy-user-id').value;
                 dummyUsersId = dummyUsersId ? dummyUsersId.split(',').map(id => parseInt(id)) : [];
                 let cacheTime = parseInt(row.querySelector('.js-input-cache-time').value);
+                let fixtures = [].filter.call(row.querySelectorAll('input[name="fixtures"]'), input => input.checked)
+                    .map(input => input.value);
                 let showInfoRow = (message, type = 'success') => {
                     let colSpanNum = row.children.length;
                     let newRow = document.createElement('tr');
@@ -117,7 +125,8 @@ class Options {
                     null,
                     null,
                     dummyUsersId,
-                    cacheTime
+                    cacheTime,
+                    fixtures
                 ).then(() => {
                     showInfoRow('Successfully updated.');
                 }).catch(() => {
@@ -132,18 +141,25 @@ class Options {
         tableBody.innerHTML = '';
     }
 
-    _insertRow(domain, authType, token, dummyUsersId, cacheTime) {
+    _insertRow(index, domain, authType, token, dummyUsersId, cacheTime, selectedFixtures) {
         let tableBody = document.querySelector('.js-sites-table__body');
-        tableBody.insertAdjacentHTML('afterbegin', this._renderRow(domain, authType, token, dummyUsersId, cacheTime));
+        tableBody.insertAdjacentHTML('afterbegin', this._renderRow(index, domain, authType, token, dummyUsersId, cacheTime, selectedFixtures));
     }
 
-    _renderRow(domain, authType, token, dummyUsersId, cacheTime) {
+    _renderRow(index, domain, authType, token, dummyUsersId, cacheTime, selectedFixtures) {
+        selectedFixtures = selectedFixtures || [];
         return `<tr>
                     <td>${domain}</td>
                     <td>${authType}</td>
                     <td>${token}</td>
                     <td><input class="js-input-dummy-user-id e-input" type="text" value="${dummyUsersId ? dummyUsersId.join(',') : ''}" pattern="^(\d+,?)*$"></td>
                     <td><input class="c-actual-domains__cache-time js-input-cache-time e-input" type="number" min="1" size="3" value="${cacheTime}"></td>
+                    <td class="c-hover-popup">
+                        <span class="e-action">select</span>
+                        <div class="c-hover-popup__content">
+                            ${renderFixtureInputs(selectedFixtures, true)}
+                        </div>
+                    </td>
                     <td class="c-actual-domains__buttons">
                         <button class="c-actual-domains__button js-update-button e-button e-button--positive" name="update" value="${domain}">UPDATE</button>
                         <button class="c-actual-domains__button js-del-button e-button e-button--negative" name="del" value="${domain}">DELETE</button>
@@ -155,7 +171,7 @@ class Options {
         return token.substr(0, 2) + '*****' + token.substr(token.length - 2, token.length);
     }
 
-    async _saveNewOrUpdateDomain(domain, authType, token, dummyUsersId, cacheTime) {
+    async _saveNewOrUpdateDomain(domain, authType, token, dummyUsersId, cacheTime, fixtures) {
         try {
             let data = {};
             let auth = {};
@@ -167,6 +183,7 @@ class Options {
             data.dummyUsersId = dummyUsersId;
             data.cacheTime = cacheTime;
             data.url = domain;
+            data.fixtures = fixtures;
             
             await this._saveData(domain, data);
         } catch (e) {

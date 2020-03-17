@@ -53,6 +53,7 @@ const moveStaticSource = gulp.parallel(
     function copyChangelog() {return gulp.src(['changelog/**/*.html',]).pipe(gulp.dest('./build/changelog'))},
     function copyImages() {return gulp.src(['images/**/*', '!images/readme/**/*',]).pipe(gulp.dest('./build/images'))},
     function copyImages() {return gulp.src(['src/**/*.woff2',]).pipe(gulp.dest('./build/'))},
+    function copyFixtures() {return gulp.src(['src/js/fixtures/**/*.js',]).pipe(gulp.dest('./build/fixtures/'))},
 );
 
 const jsBuild = gulp.parallel(
@@ -76,7 +77,7 @@ const lessBuild = gulp.parallel(
 function watch(done) {
     gulp.watch(['**/*.less', '!build/**/*', '!node_modules/**/*'], lessBuild);
     gulp.watch(['**/*.js', '!build/**/*', '!node_modules/**/*'], jsBuild);
-    gulp.watch(['**/*', '!src/**/*.js', '!**/*.less', '!build/**/*', '!node_modules/**/*'], moveStaticSource);
+    gulp.watch(['**/*', '!src/**/*.js', 'src/js/fixtures/**/*.js', '!**/*.less', '!build/**/*', '!node_modules/**/*'], moveStaticSource);
     done();
 }
 

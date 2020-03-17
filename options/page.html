@@ -15,12 +15,12 @@
                     <p class="c-notice__content">Extension require these scopes to be enabled for given token: <span class="u-bold">read_user</span>, <span class="u-bold">api</span>.</p>
                 </div>
                 <div class="c-form__inputs-cont">
-                    <div class="c-form-cell">
+                    <div class="c-form-cell c-form-cell--inline">
                         <label for="input1" class="c-form-cell__label u-epsilon">Domain:</label> 
-                        <input class="js-form-add__domain e-input" id="input1" name="domain" type="url" placeholder="Gitlab domain..." value="https://">
+                        <input class="u-width-half@gtLine js-form-add__domain e-input" id="input1" name="domain" type="url" placeholder="Gitlab domain..." value="https://">
                     </div>
                     <fieldset>
-                        <legend class="u-epsilon u-bold">Auth type:</legend>
+                        <legend class="u-text-no-wrap u-epsilon u-bold">Auth type:</legend>
                         <div class="c-form-cell c-form-cell--inline">
                             <input class="e-input js-auth-type-input" id="auth_type-private" type="radio" value="private" name="auth_type" checked>
                             <label for="auth_type-private" class="e-input e-input--faux" aria-hidden="true"></label>
@@ -32,24 +32,32 @@
                             <label for="auth_type-oauth" class="c-form-cell__label u-epsilon">Gitlab OAuth</label>
                             <span class="c-redirect-url js-redirect-url"></span>
                         </div>
-                        <div class="c-form-cell">
+                        <div class="c-form-cell c-form-cell--inline">
                             <label for="input2" class="c-form-cell__label u-epsilon">
-                                <span class="c-auth-type-token-label is-active js-auth-type-token-label" data-type="private">Private token:</span>
-                                <span class="c-auth-type-token-label js-auth-type-token-label" data-type="oauth">App ID:</span>
+                                <span class="c-auth-type-token-label is-active js-auth-type-token-label u-text-no-wrap" data-type="private">Private token:</span>
+                                <span class="c-auth-type-token-label js-auth-type-token-label u-text-no-wrap" data-type="oauth">App ID:</span>
                             </label> 
-                            <input class="e-input js-form-add__token" id="input2" type="password" name="token" autocomplete="off" required>
+                            <input class="u-width-half@gtLine e-input js-form-add__token" id="input2" type="password" name="token" autocomplete="off">
                         </div>
-                        <div class="c-form-cell">
-                            <div class="c-notice c-notice--small">
-                                <svg class="c-notice__icon e-icon e-icon--circle u-delta" aria-hidden="true"><use xlink:href="#info"></use></svg>
-                                <p class="c-notice__content">If for some reason you use some dummy users in groups, here you can exclude them from view.</p>
-                            </div>
-                            <label for="dummy-users-id-input" class="c-form-cell__label u-epsilon">Dummy users ID: <span class="u-milli u-color-text-light">(comma separated list of IDs)</span></label>
-                            <input class="e-input" id="dummy-users-id-input" type="text" name="dummy-users-id" pattern="^(\d+,?)*$" placeholder="123456,123456,123456">
-                        </div>
-                        <div class="c-form-cell">
-                            <label for="cache-time-input" class="c-form-cell__label u-epsilon">Cache time [minutes]: <span class="u-milli u-color-text-light">(set how long will be downloaded data cached before they will be downloaded again)</span></label>
-                            <input class="e-input" id="cache-time-input" type="number" min="1" value="8" name="cache-time">
+                        <div class="o-layout o-layout--equal">
+                            <fieldset class="o-layout__item">
+                                <legend class="u-text-no-wrap u-gamma">Additional settings</legend>
+                                <div class="c-form-cell">
+                                    <label for="dummy-users-id-input" class="c-form-cell__label u-epsilon">Dummy users ID: <span class="u-milli u-color-text-light">(comma separated list of IDs)</span></label>
+                                    <input class="e-input" id="dummy-users-id-input" type="text" name="dummy-users-id" pattern="^(\d+,?)*$" placeholder="123456,123456,123456">
+                                    <div class="c-form-cell__error c-notice c-notice--small c-notice--point-top">
+                                        <svg class="c-notice__icon e-icon e-icon--circle u-delta" aria-hidden="true"><use xlink:href="#info"></use></svg>
+                                        <p class="c-notice__content">If for some reason you use some dummy users in groups, here you can exclude them from view.</p>
+                                    </div>
+                                </div>
+                                <div class="c-form-cell">
+                                    <label for="cache-time-input" class="c-form-cell__label u-epsilon">Cache time [minutes]: <span class="u-milli u-color-text-light">(set how long will be downloaded data cached before they will be downloaded again)</span></label>
+                                    <input class="e-input" id="cache-time-input" type="number" min="1" value="8" name="cache-time">
+                                </div>
+                            </fieldset>
+                            <fieldset class="o-layout__item js-fixtures-cont">
+                                <legend class="u-text-no-wrap u-gamma">Gitlab Fixtures</legend>
+                            </fieldset>
                         </div>
                     </fieldset>
                     <button class="e-button">Add settings</button>
@@ -65,6 +73,7 @@
                         <th>App ID / Private token</th>
                         <th>Dummy users Id</th>
                         <th>Cache time</th>
+                        <th>Fixtures</th>
                         <th></th>
                     </tr>
                 </thead>
