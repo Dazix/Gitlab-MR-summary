@@ -77,7 +77,7 @@ async function webRequestsCallback(details) {
                 let newMergeRequests = await downloader.getMergeRequestsDataForProject(projectNameWithPath);
                 dataObject.updateMergeRequestsByNew(newMergeRequests);
                 
-                await storage.setDomainData(details.url, dataObject.getAsSimpleDataObject());
+                await storage.setDomainData(details.url, {mergeRequestsData: dataObject.getAsSimpleDataObject()});
                 await sleep(2000); // give some time to page load
                 sendUpdatedDataToTabs(details.url, dataObject.getAsSimpleDataObject());
                 
@@ -94,7 +94,7 @@ async function webRequestsCallback(details) {
                 dataObject.mergeRequests = dataObject.mergeRequests
                     .filter(mergeRequest => mergeRequest.project.pathWithNamespace !== projectPathWithNamespace && mergeRequest.iid !== mergeRequestIid);
                 
-                await storage.setDomainData(details.url, dataObject.getAsSimpleDataObject());
+                await storage.setDomainData(details.url, {mergeRequestsData: dataObject.getAsSimpleDataObject()});
                 sendUpdatedDataToTabs(details.url, dataObject.getAsSimpleDataObject());
                 
                 return;
@@ -115,7 +115,7 @@ async function webRequestsCallback(details) {
                     }
                 }
                 
-                await storage.setDomainData(details.url, dataObject.getAsSimpleDataObject());
+                await storage.setDomainData(details.url, {mergeRequestsData: dataObject.getAsSimpleDataObject()});
                 sendUpdatedDataToTabs(details.url, dataObject.getAsSimpleDataObject());
                 
                 return;
