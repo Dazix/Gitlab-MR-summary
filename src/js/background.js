@@ -57,6 +57,14 @@ chrome.runtime.onInstalled.addListener((details) => {
         });
 });
 
+chrome.contextMenus.create({
+    title: "Changelog",
+    contexts: ["browser_action"],
+    onclick: () => {
+        chrome.tabs.create({url: chrome.extension.getURL('changelog/index.html')});
+    }
+});
+
 chrome.webRequest.onCompleted.addListener(webRequestsCallback, {urls: ['<all_urls>']});
 chrome.webRequest.onBeforeRedirect.addListener(webRequestsCallback, {urls: ['<all_urls>']});
 
@@ -131,6 +139,8 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async details => {
     try {
         domainData = await getDomainData(details.url);
         if (domainData) {
+            chrome.browserAction.enable(details.tabId);
+
             if (domainData.token) {
                 await executeScript(details.tabId, 'gitlab-mr-summary.js')
                     .then(() => insertCss(details.tabId, 'gitlab-mr-summary.css'));
@@ -149,6 +159,8 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async details => {
         }
     } catch (e) {
         console.debug(e);
+    } finally {
+        chrome.browserAction.disable(details.tabId);
     }
 });
 
