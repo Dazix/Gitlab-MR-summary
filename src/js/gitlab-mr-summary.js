@@ -1,19 +1,13 @@
 import Data from "./data";
 import HTMLContent from "./htmlContent";
-import StorageManagerObject from "./storageManagerObject"
 import Messenger from "./messenger";
 import StatusCodes from "./statusCodes";
 import {DownloadAlreadyInProgressError} from "./errors";
 
 class GitlabMRSummary {
 
-    #storageKey = 'mergeRequestsData';
-
     /** @type {HTMLContent} */
     #htmlGenerator;
-    
-    /** @type {StorageManagerObject} */
-    #storage;
     
     /** @type {{url: string, dummyUsersId: number[], cacheTime: number, mergeRequestsData: {mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}}} */
     #domainData;
@@ -27,12 +21,10 @@ class GitlabMRSummary {
     /**
      * @param {{url: string, dummyUsersId: number[], cacheTime: number, mergeRequestsData: {mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}}} domainData
      * @param {HTMLContent} htmlGenerator
-     * @param {StorageManagerObject} storage
      * @param {Messenger} messenger
      */
-    constructor(domainData, htmlGenerator, storage, messenger) {
+    constructor(domainData, htmlGenerator, messenger) {
         this.#htmlGenerator = htmlGenerator;
-        this.#storage = storage;
         this.#domainData = domainData;
         this.#messenger = messenger;
         this.#mergeRequestsData = new Data(domainData.mergeRequestsData ? domainData.mergeRequestsData : {});
@@ -124,7 +116,6 @@ class GitlabMRSummary {
         if (data.statusCode === StatusCodes.DOWNLOAD_ALREADY_IN_PROGRESS) {
             throw new DownloadAlreadyInProgressError();
         }
-        await this.#storage.setDomainData(window.location.origin, {[this.#storageKey]: data});
 
         return new Data(data);
     }
@@ -133,16 +124,6 @@ class GitlabMRSummary {
         document.body.addEventListener('click', async evt => {
             /** @type Element */
             let targetElm = evt.target;
-
-            let projectPathWithNamespace;
-            let mergeRequestIID;
-            let mergeRequestUniqueIdFromPage;
-            
-            if (document.body.dataset.findFile) {
-                // /<namespace>/<project>/-/find_file/master
-                projectPathWithNamespace = document.body.dataset.findFile.split('/').slice(1,3).join('/');
-                mergeRequestIID = document.body.dataset.pageTypeId;
-            }
             
             if (targetElm.classList.contains('js-refresh-button')) {
                 this._showSpinnerIcon();
@@ -273,7 +254,6 @@ Messenger.send(Messenger.GET_DOMAIN_DATA).then(domainData => {
      new GitlabMRSummary(
          domainData,
          new HTMLContent(),
-         new StorageManagerObject(),
          new Messenger(),
      ).run();
 }).catch(err => console.error(err));
