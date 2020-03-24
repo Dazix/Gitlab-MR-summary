@@ -8,6 +8,16 @@ import Data from "./data";
 import {sleep} from "./utils";
 import {getAvailableFixture} from "./fixtures";
 
+const CONTEXT_MENU_ITEM_CHANGELOG_ID = '3366';
+
+chrome.contextMenus.create({
+    id: CONTEXT_MENU_ITEM_CHANGELOG_ID,
+    title: "Changelog",
+    contexts: ["browser_action"],
+    onclick: () => {
+        chrome.tabs.create({url: chrome.extension.getURL('changelog/index.html')});
+    }
+});
 
 chrome.runtime.onInstalled.addListener((details) => {
     let storage = new StorageManagerObject();
@@ -30,19 +40,36 @@ chrome.runtime.onInstalled.addListener((details) => {
                 console.debug(err);
             });
         // end - fix compatibility with new version
+        
+        let showNewBadge = () => {
+            chrome.browserAction.setBadgeBackgroundColor({color:'gray'});
+            chrome.browserAction.setBadgeText({text:"new"});
+            
+            chrome.contextMenus.update(CONTEXT_MENU_ITEM_CHANGELOG_ID, {
+                title: "Changelog *NEW UPDATE*",
+                contexts: ["browser_action"],
+            });
+        };
+        let popUpChangelogPage = () => {
+            chrome.tabs.create({url: chrome.extension.getURL('changelog/index.html')});
+        };
 
         let newVersion = chrome.runtime.getManifest().version;
         storage.get(`changelog_shown`)
             .then(lastChangelogVersion => {
                 let removeFixPart = version => version.substr(0, version.lastIndexOf('.')); 
-                
+
                 if (removeFixPart(newVersion) !== removeFixPart(lastChangelogVersion)) {
-                    chrome.tabs.create({url: chrome.extension.getURL('changelog/index.html')});
+// DON'T POPUP CHANGELOG AUTOMATICALLY uncomment only on bigger update/update which requires some action
+//                     popUpChangelogPage();
+                    showNewBadge();
                 }
             })
             .catch(e => {
                 if (e.statusCode === StatusCodes.NO_DATA) {
-                    chrome.tabs.create({url: chrome.extension.getURL('changelog/index.html')});
+// DON'T POPUP CHANGELOG AUTOMATICALLY uncomment only on bigger update/update which requires some action
+//                     popUpChangelogPage();
+                    showNewBadge();
                 }
             })
             .finally(() => {
@@ -55,14 +82,6 @@ chrome.runtime.onInstalled.addListener((details) => {
                 chrome.runtime.openOptionsPage();
             }
         });
-});
-
-chrome.contextMenus.create({
-    title: "Changelog",
-    contexts: ["browser_action"],
-    onclick: () => {
-        chrome.tabs.create({url: chrome.extension.getURL('changelog/index.html')});
-    }
 });
 
 chrome.webRequest.onCompleted.addListener(webRequestsCallback, {urls: ['<all_urls>']});
@@ -163,9 +182,8 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async details => {
             }
         }
     } catch (e) {
-        console.debug(e);
-    } finally {
         chrome.browserAction.disable(details.tabId);
+        console.debug(e);
     }
 });
 
