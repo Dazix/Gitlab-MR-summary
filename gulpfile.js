@@ -72,6 +72,7 @@ const lessBuild = gulp.parallel(
     buildLess('./src/css/gitlab-mr-summary.less', './build'),
     buildLess('./options/style.less', './build/options'),
     buildLess('./changelog/style.less', './build/changelog'),
+    buildLess('./src/css/fixtures/**/*.less', './build/fixtures'),
 );
 
 function watch(done) {

@@ -151,8 +151,13 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async details => {
             ) {
                 let fixturesToRun = getAvailableFixture(domainData.data.fixtures, details.url),
                     promises = [];
-                for (let fileName of fixturesToRun) {
-                    promises.push(executeScript(details.tabId, `fixtures/${fileName}`));
+                for (let fixture of fixturesToRun) {
+                    if (fixture.styleFile) {
+                        promises.push(insertCss(details.tabId, `fixtures/${fixture.styleFile}`))
+                    }
+                    if (fixture.scriptFile) {
+                        promises.push(executeScript(details.tabId, `fixtures/${fixture.scriptFile}`));
+                    }
                 }
                 await Promise.all(promises);
             }

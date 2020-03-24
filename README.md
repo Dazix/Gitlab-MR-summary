@@ -32,8 +32,11 @@ A collection of several scripts that make working with gitlab a little more comf
 ![commits count](images/readme/fixture__commits-count.png)
 If you are used to squash commits before merging and sometimes you forget it, first fixture will help a little bit.
 2. Expand CI/CD secrets textarea
-![expand secrets textarea](images/readme/fixture__expand-textarea.png)
-The second fixture helps you with small unresizable textareas in Settings > CI/CD > Variables, now they will be bigger for better readability of values.
+<p>
+<img width="350" height="290" src="images/readme/fixture__expand-textarea.png">
+<img width="350" height="301" src="images/readme/fixture__expand-textarea_2.png">
+</p>
+The second fixture helps with preview of variables (when you click on reveal values) and in edit modal window set bigger height for textarea.
 3. Automatically check delete source branch in new-mergerequest page
 ![auto check delete branch](images/readme/fixture__auto-check-delete-branch.png)
 And third one automatically check option *Delete source branch when merge request is accepted* on merge request create page.
