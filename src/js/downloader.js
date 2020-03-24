@@ -18,12 +18,12 @@ export default class Downloader {
 
     async getData() {
         await Promise.all([
-            this._loadUsersData(),
+            this._loadUserData(),
             this._loadProjects(),
         ])
             .then(data => this._loadMergeRequests(data[1]))
             .then(this._enrichMergeRequestsByParticipants.bind(this))
-            .then(this._enrichMergeRequestsParticipantsByApprovalsAndApprovers.bind(this))
+            .then(this._enrichMergeRequestsParticipantsByApproversAndByApprovals.bind(this))
             .then(this._removeNonRelevantMergeRequests.bind(this))
             .then(data => {
                 this._downloadedData.mergeRequests = data;
@@ -39,12 +39,12 @@ export default class Downloader {
      */
     async getMergeRequestsDataForProject(projectId) {
         return await Promise.all([
-            this._loadUsersData(), 
+            this._loadUserData(), 
             this._getProject(projectId)
         ])
             .then(data => this._loadMergeRequests([data[1]]))
             .then(this._enrichMergeRequestsByParticipants.bind(this))
-            .then(this._enrichMergeRequestsParticipantsByApprovalsAndApprovers.bind(this))
+            .then(this._enrichMergeRequestsParticipantsByApproversAndByApprovals.bind(this))
             .then(this._removeNonRelevantMergeRequests.bind(this));
     }
 
@@ -75,7 +75,7 @@ export default class Downloader {
      * @return {Promise<MergeRequest[]>}
      * @private
      */
-    async _enrichMergeRequestsParticipantsByApprovalsAndApprovers(mergeRequests) {
+    async _enrichMergeRequestsParticipantsByApproversAndByApprovals(mergeRequests) {
         let requests = [];
         for (let mergeRequest of mergeRequests) {
             requests.push(async () =>
@@ -83,28 +83,55 @@ export default class Downloader {
                     this.urls.mergeRequestApprovals
                         .replace(':project_id:', mergeRequest.project.id.toString())
                         .replace(':merge_request_iid:', mergeRequest.iid.toString())
-                ).then(approvalsData => {
-                    mergeRequest.approvers = approvalsData.approvers.map(item => {
-                        let approver = new User();
-                        approver.id = item.user.id;
-                        approver.name = item.user.name;
-                        approver.avatarUrl = new URL(item.user.avatar_url);
-                        return approver
-                    });
-                    mergeRequest.approverGroupsId = approvalsData.approver_groups.map(item => item.group.id);
-                    if (approvalsData.approved_by.length) {
-                        for (let participant of mergeRequest.participants) {
-                            for (let data of approvalsData.approved_by) {
-                                if (participant.id === data.user.id) {
-                                    participant.approved = true;
-                                    if (participant.id === this._downloadedData.user.id) {
-                                        mergeRequest.approvedByUser = true;
+                )
+                    .then(approvalsData => {
+                        if (approvalsData.approver_groups.length === 0) {
+                            return approvalsData;
+                        }
+                        let promises = [];
+                        for (let group of approvalsData.approver_groups) {
+                            promises.push(this._getMembersOfGroup(group.group.id));
+                        }
+                        
+                        return Promise.all(promises).then(values => {
+                            values.forEach(users => {
+                                approvalsData.approvers = [].concat(approvalsData.approvers, users.map(val => {return {user: val}}));
+                            });
+
+                            return approvalsData;
+                        });
+                    })
+                    .then(approvalsData => {
+                        mergeRequest.participants = mergeRequest.participants
+                            .concat(approvalsData.approvers.map(item => {
+                                let approver = new User();
+                                approver.id = item.user.id;
+                                approver.name = item.user.name;
+                                approver.avatarUrl = new URL(item.user.avatar_url);
+                                return approver;
+                            }));
+
+                        mergeRequest.participants = Object.values(
+                            mergeRequest.participants.reduce((users, user) => {
+                                if (!(user.id in users)) {
+                                    users[user.id] = user;
+                                }
+                                return users;
+                            }, {}));
+                        
+                        if (approvalsData.approved_by.length) {
+                            for (let participant of mergeRequest.participants) {
+                                for (let data of approvalsData.approved_by) {
+                                    if (participant.id === data.user.id) {
+                                        participant.approved = true;
+                                        if (participant.id === this._downloadedData.user.id) {
+                                            mergeRequest.approvedByUser = true;
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                })
+                    })
             );
         }
 
@@ -126,16 +153,6 @@ export default class Downloader {
                 // is user belongs to participants
                 || request.participants
                     .filter(participant => participant.id === this._downloadedData.user.id)
-                    .length > 0
-                ||
-                // is user belongs to approvers
-                request.approvers
-                    .filter(approver => approver.id === this._downloadedData.user.id)
-                    .length > 0
-                ||
-                // is user belongs to any approving group
-                request.approverGroupsId
-                    .filter(groupId => this._downloadedData.user.groupsId.indexOf(groupId) !== -1)
                     .length > 0
             ) {
                 filteredMergeRequests.push(request);
@@ -162,11 +179,9 @@ export default class Downloader {
                         let user = new User();
                         user.id = participant.id;
                         user.name = participant.name;
-                        user.avatarUrl = participant.avatar_url;
+                        user.avatarUrl = new URL(participant.avatar_url);
                         return user;
                     })
-                // remove actual user (useless for display)
-                //.filter(participant => participant.id !== this._downloadedData.user.id)
             ));
         }
 
@@ -211,8 +226,8 @@ export default class Downloader {
         });
     }
 
-    async _loadUsersData() {
-        return Promise.all([this._getActualUser(), this._getUsersGroups()])
+    async _loadUserData() {
+        return Promise.all([this._getActualUser(), this._getUserGroups()])
             .then(values => {
                 this._downloadedData.user.id = values[0].id;
                 this._downloadedData.user.groupsId = values[1].map(group => group.id);
@@ -220,28 +235,30 @@ export default class Downloader {
     }
 
     async _loadProjects() {
+        return await this._loadPaginatedData(this.urls.projects);
+    }
+    
+    async _loadPaginatedData(url, perPage = 10, maxTries = 100) {
         let page = 1,
-            perPage = 10,
-            maxTries = 50,
-            url = new URL(this.urls.projects),
-            projects = [],
-            loadMoreProjects = true;
+            urlObject = new URL(url),
+            data = [],
+            loadMore = true;
 
-        url.searchParams.set('per_page', perPage.toString());
+        urlObject.searchParams.set('per_page', perPage.toString());
 
         do {
-            url.searchParams.set('page', page.toString());
+            urlObject.searchParams.set('page', page.toString());
 
-            let ret = await this._sendRequest(url.href);
-            projects = projects.concat(ret);
+            let ret = await this._sendRequest(urlObject.href);
+            data = data.concat(ret);
 
             await sleep(10);
-            loadMoreProjects = ret.length === perPage;
+            loadMore = ret.length === perPage;
 
             page++;
-        } while (page < maxTries && loadMoreProjects);
+        } while (page < maxTries && loadMore);
 
-        return projects;
+        return data;
     }
 
     /**
@@ -271,9 +288,13 @@ export default class Downloader {
      *
      * @see https://docs.gitlab.com/ee/api/members.html for access levels
      */
-    _getUsersGroups() {
+    _getUserGroups() {
         // 30 = developer access
         return this._sendRequest(this.urls.groups + '?min_access_level=30');
+    }
+    
+    async _getMembersOfGroup(groupId) {
+        return await this._loadPaginatedData(this.urls.groupMembers.replace(':id:', groupId));
     }
 
     async _sendRequest(url, n = 5) {
