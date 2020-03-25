@@ -4,34 +4,35 @@ const AVAILABLE_FIXTURES = [
         value: 'commits-count',
         description: 'Show commits count in merge button',
         urlPathRegex: /^\/\S+\/-\/merge_requests\/\d+$/,
-        file: 'commits-count.js',
+        scriptFile: 'commits-count.js',
     },
     {
         name: 'ci-cd-textarea',
         value: 'ci-cd-textarea',
         description: 'Expand CI/CD secrets textarea',
         urlPathRegex: /^\/\S+\/-\/settings\/ci_cd$/,
-        file: 'text-area-expand.js',
+        scriptFile: 'text-area-expand.js',
+        styleFile: 'text-area-expand.css',
     },
     {
         name: 'auto-check-delete-branch',
         value: 'auto-check-delete-branch',
         description: 'Automatically check delete source branch in new-mergerequest page',
         urlPathRegex: /^\/\S+\/-\/merge_requests\/new$/,
-        file: 'auto-check-delete-branch.js',
+        scriptFile: 'auto-check-delete-branch.js',
     },
 ];
 
 /**
  * @param {string[]} enabledFixtures
  * @param {string} url
- * @return {string[]}
+ * @return {{scriptFile: string, styleFile: string}}
  */
 export function getAvailableFixture(enabledFixtures, url) {
     let urlPath = new URL(url).pathname;
     return AVAILABLE_FIXTURES
         .filter(fixture => enabledFixtures.includes(fixture.value) && urlPath.match(fixture.urlPathRegex))
-        .map(fixture => fixture.file);
+        .map(fixture => {return {scriptFile: fixture.scriptFile, styleFile: fixture.styleFile}});
 }
 
 /**

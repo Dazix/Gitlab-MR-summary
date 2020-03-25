@@ -33,12 +33,6 @@ export default class MergeRequest {
     /** @type {User[]} */
     participants;
 
-    /** @type {User[]} */
-    approvers;
-
-    /** @type {Number[]} */
-    approverGroupsId;
-
     /** @type {boolean} */
     workInProgress;
 
@@ -46,7 +40,7 @@ export default class MergeRequest {
     approvedByUser;
 
     /**
-     * @param {{workInProgress: boolean, sourceBranch: string, iid: number, approverGroupsId: Number[], author: {groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}, project: {nameWithNamespace: string, id: number, pathWithNamespace: string}, approvers: {groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}[], title: string, createdAt: string, targetBranch: string, webUrl: string, commentsSum: number, participants: {groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}[], approvedByUser: boolean}} data
+     * @param {{workInProgress: boolean, sourceBranch: string, iid: number, author: {groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}, project: {nameWithNamespace: string, id: number, pathWithNamespace: string}, title: string, createdAt: string, targetBranch: string, webUrl: string, commentsSum: number, participants: {groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}[], approvedByUser: boolean}} data
      */
     constructor(data= {}) {
         this.author = new User(data.author);
@@ -59,8 +53,6 @@ export default class MergeRequest {
         this.createdAt = data.createdAt ? new Date(data.createdAt) : undefined;
         this.project = new Project(data.project);
         this.participants = data.participants ? data.participants.map(participant => new User(participant)) : [];
-        this.approvers = data.approvers ? data.approvers.map(approver => new User(approver)) : [];
-        this.approverGroupsId = data.approverGroupsId;
         this.workInProgress = data.workInProgress;
         this.approvedByUser = data.approvedByUser;
         this.project = new Project(data.project);
@@ -71,7 +63,7 @@ export default class MergeRequest {
     }
 
     /**
-     * @return {{workInProgress: boolean, sourceBranch: string, iid: number, approverGroupsId: Number[], author: {groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}, project: {nameWithNamespace: string, id: number, pathWithNamespace: string}, approvers: {groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}[], title: string, createdAt: string, targetBranch: string, webUrl: string, commentsSum: number, participants: {groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}[], approvedByUser: boolean}}
+     * @return {{workInProgress: boolean, sourceBranch: string, iid: number, author: {groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}, project: {nameWithNamespace: string, id: number, pathWithNamespace: string}, title: string, createdAt: string, targetBranch: string, webUrl: string, commentsSum: number, participants: {groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}[], approvedByUser: boolean}}
      */
     getAsSimpleDataObject() {
         return {
@@ -85,8 +77,6 @@ export default class MergeRequest {
             createdAt: this.createdAt.toUTCString(),
             project: this.project.getAsSimpleDataObject(),
             participants: this.participants.map(participant => participant.getAsSimpleDataObject()),
-            approvers: this.approvers.map(approver => approver.getAsSimpleDataObject()),
-            approverGroupsId: this.approverGroupsId,
             workInProgress: this.workInProgress,
             approvedByUser: this.approvedByUser,
         }
