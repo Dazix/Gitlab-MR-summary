@@ -39,6 +39,7 @@ class GitlabMRSummary {
         this._show(data);
         this._observeUsersActions();
         this._listenForUpdate();
+        this._observeFilter();
     }
 
     _listenForUpdate() {
@@ -47,7 +48,8 @@ class GitlabMRSummary {
     
     _onMessage(message) {
         if (message.mergeRequestsDataForUpdate) {
-            this._show(new Data(message.mergeRequestsDataForUpdate));
+            this.#mergeRequestsData = new Data(message.mergeRequestsDataForUpdate);
+            this._show(this.#mergeRequestsData);
         }
     }
 
@@ -63,18 +65,18 @@ class GitlabMRSummary {
                 [data.user.id].concat(this.#domainData.dummyUsersId),
             );
             let htmlFragments = this.#htmlGenerator.renderList(data);
-            dropdown.querySelector('.js-dropdown__mr-cont').innerHTML = htmlFragments.mergeRequestsOverview;
-            dropdown.querySelector('.js-dropdown__last-update').innerHTML = htmlFragments.lastUpdate;
+            dropdown.querySelector('.js-merge-requests-cont__list').innerHTML = htmlFragments.mergeRequestsOverview;
+            dropdown.querySelector('.js-merge-requests-cont__last-update').innerHTML = htmlFragments.lastUpdate;
             
             if (data.errorMessage) {
-                dropdown.querySelector('.js-dropdown__info-cont').innerHTML = this.#htmlGenerator.getMessage(data.errorMessage, 'warning');
+                dropdown.querySelector('.js-merge-requests-cont__info-cont').innerHTML = this.#htmlGenerator.getMessage(data.errorMessage, 'warning');
             } else {
-                dropdown.querySelector('.js-dropdown__info-cont').innerHTML = '';
+                dropdown.querySelector('.js-merge-requests-cont__info-cont').innerHTML = '';
             }
 
             this._updateMergeRequestsCount(data.nonUsersMergeRequestsNotApproved.length);
         } else {
-            dropdown.querySelector('.js-dropdown__info-cont').innerHTML = this.#htmlGenerator.getMessage(data.errorMessage);
+            dropdown.querySelector('.js-merge-requests-cont__info-cont').innerHTML = this.#htmlGenerator.getMessage(data.errorMessage);
         }
         
         this._showClassicIcon();
@@ -141,6 +143,13 @@ class GitlabMRSummary {
                 e.preventDefault();
                 e.currentTarget.querySelector('.js-dropdown').classList.toggle('hidden');
                 e.currentTarget.querySelector('.js-dropdown').classList.toggle('show');
+                
+                let searchInput = document.querySelector('.js-merge-requests-cont__search');
+                if (e.currentTarget.querySelector('.js-dropdown').classList.contains('show')) {
+                    searchInput.focus();
+                } else {
+                    searchInput.blur();
+                }
             }
         });
         document.addEventListener('click', e => {
@@ -148,8 +157,35 @@ class GitlabMRSummary {
             if (!e.target.closest('.js-gitlab-mr-summary') && dropdown.classList.contains('show')) {
                 dropdown.classList.toggle('hidden');
                 dropdown.classList.toggle('show');
+
+                if (dropdown.classList.contains('hidden')) {
+                    document.querySelector('.js-merge-requests-cont__search').blur();
+                }
             }
         });
+    }
+    
+    _observeFilter() {
+        document.querySelector('.js-merge-requests-cont__search')
+            .addEventListener('keyup', evt => {
+                this._filterMergeRequests(evt.target.value);
+            });
+    }
+    
+    _filterMergeRequests(phrase) {
+        phrase = phrase.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        for (let mr of this.#mergeRequestsData.mergeRequests) {
+            let haystack = mr.title + mr.author.name + mr.project.nameWithNamespace + mr.project.pathWithNamespace + mr.sourceBranch + mr.targetBranch;
+            
+            haystack = haystack.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            
+            let mrElement = document.querySelector(`[data-merge-request-unique-id="${mr.uniqueId}"]`);
+            if (haystack.search(phrase) !== -1) {
+                mrElement.classList.remove('is-hidden');
+            } else {
+                mrElement.classList.add('is-hidden');
+            }
+        }
     }
 
     /**

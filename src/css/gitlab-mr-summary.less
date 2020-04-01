@@ -2,13 +2,25 @@
 
 .scope-gitlab-mr-summary {
     @import "./utils.less";
+
+    .c-spinner-icon {
+        path, rect {
+            fill: #FF6700;
+        }
+        & ~ .todos-count {
+            display: none;
+        }
+    }
     
     .c-dropdown {
-        max-width: 720px;
-        width: 720px;
-        padding: 10px;
+        max-width: 50em;
+        width: 50em;
         max-height: calc(100vh - 41px - (2 * 10px));
         overflow-y: auto;
+        
+        * {
+            margin-top: 0;
+        }
 
         &::-webkit-scrollbar {
             width: 7px;
@@ -23,103 +35,113 @@
             background: #555;
         }
     }
-        .c-dropdown__tab {
+    
+        .c-merge-requests-cont {
             margin-top: 0;
+            padding: 0 .7em .7em .7em;
         }
     
-    .c-info {
-        margin-top: 0;
-        * {
-            margin-top: 0;
-        }
-        position: absolute;
-        right: .7em;
-        display: flex;
-        align-items: center;
-    }
-        .c-refresh-btn {
-            display: inline-block;
-        }
-        .c-last-update-time {
-            margin: 0 .5em;
-        }
-
-    .c-spinner-icon {
-        path, rect {
-            fill: #FF6700;
-        }
-        & ~ .todos-count {
-            display: none;
-        }
-    }
-    
-    .c-merge-request {
-        display: flex;
-        justify-content: space-between;
-        padding: 5px;
-        
-        &--approved-by-me {
-            filter: grayscale(100%);
-        }
-        
-        &:nth-child(2n+1) {
-            background: rgb(241, 241, 241);
-        }
-        &:not(:last-child) {
-            margin-bottom: 8px;
-        }
-    }
-    
-        .c-merge-request__col {
-            margin-top: 0;
-            > * {
-                margin-top: 0;
-            }
-            &--first {
+            .c-merge-requests-cont__header {
                 display: flex;
-                align-items: center;
-                width: 3em;
-            }
-            &--second {
-                flex-grow: 2;
-                line-height: 1;
-            }
-            &--third {
-                min-width: 8.55em;
-                display: flex;
-                justify-content: flex-end;
-                align-items: center;
                 flex-wrap: wrap;
+                justify-content: space-between;
+                background: white;
+                margin-bottom: .7em;
             }
-        }
-
-    .c-avatar {
-        position: relative;
-        &.is-approved:after {
-            display: block;
-            content: '✔';
-            position: absolute;
-            width: 11px;
-            height: 11px;
-            border-radius: 50%;
-            background: orange;
-            color: white;
-            top: 0;
-            right: 0;
-            font-size: 8px;
-            text-align: center;
-            box-shadow: 0 0 2px black;
-        }
-    }
-    .c-avatar__img {
-        width: 2em;
-        height: 2em;
-        box-shadow: 0 0 2px black;
-        border-radius: 50%;
-        margin: 0 .2em;
-        &--small {
-            width: 1.3em;
-            height: 1.3em;
-        }
-    }
+                .c-merge-requests-cont__info-cont {
+                    width: 100%;
+                    margin-bottom: .7em;
+                }
+                .c-merge-requests-cont__search {
+                    width: 48%;
+                }
+                .c-age {
+                    margin-top: 0;
+                    * {margin-top: 0;}
+                    display: flex;
+                    align-items: center;
+                    width: 45%;
+                }
+                    .c-age__refresh {
+                        display: inline-block;
+                    }
+                    .c-age__time {
+                        margin: 0 .5em;
+                    }
+            .c-merge-requests-cont__list {
+                
+            }
+                .c-merge-request {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 5px;
+                    
+                    &--approved-by-me {
+                        filter: grayscale(100%);
+                    }
+                    
+                    &.is-hidden {
+                        display: none;
+                    }
+                    
+                    &:nth-child(2n+1) {
+                        background: rgb(241, 241, 241);
+                    }
+                    &:not(:last-child) {
+                        margin-bottom: 8px;
+                    }
+                }
+                
+                    .c-merge-request__col {
+                        margin-top: 0;
+                        > * {
+                            margin-top: 0;
+                        }
+                        &--first {
+                            display: flex;
+                            align-items: center;
+                            width: 3em;
+                        }
+                        &--second {
+                            flex-grow: 2;
+                            line-height: 1;
+                        }
+                        &--third {
+                            min-width: 8.55em;
+                            display: flex;
+                            justify-content: flex-end;
+                            align-items: center;
+                            flex-wrap: wrap;
+                        }
+                    }
+            
+                    .c-avatar {
+                        position: relative;
+                        &.is-approved:after {
+                            display: block;
+                            content: '✔';
+                            position: absolute;
+                            width: 11px;
+                            height: 11px;
+                            border-radius: 50%;
+                            background: orange;
+                            color: white;
+                            top: 0;
+                            right: 0;
+                            font-size: 8px;
+                            text-align: center;
+                            box-shadow: 0 0 2px black;
+                        }
+                    }
+                    .c-avatar__img {
+                        width: 2em;
+                        height: 2em;
+                        box-shadow: 0 0 2px black;
+                        border-radius: 50%;
+                        margin: 0 .2em;
+                        &--small {
+                            width: 1.3em;
+                            height: 1.3em;
+                        }
+                    }
 }
