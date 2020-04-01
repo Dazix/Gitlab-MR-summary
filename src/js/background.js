@@ -16,6 +16,12 @@ chrome.contextMenus.create({
     contexts: ["browser_action"],
     onclick: () => {
         chrome.tabs.create({url: chrome.extension.getURL('changelog/index.html')});
+        
+        chrome.browserAction.setBadgeText({text:""});
+        chrome.contextMenus.update(CONTEXT_MENU_ITEM_CHANGELOG_ID, {
+            title: "Changelog",
+            contexts: ["browser_action"],
+        });
     }
 });
 
