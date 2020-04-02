@@ -11,8 +11,8 @@ const AVAILABLE_FIXTURES = [
         value: 'ci-cd-textarea',
         description: 'Expand CI/CD secrets textarea',
         urlPathRegex: /^\/\S+\/-\/settings\/ci_cd$/,
-        scriptFile: 'text-area-expand.js',
-        styleFile: 'text-area-expand.css',
+        scriptFile: 'ci-cd-textarea.js',
+        styleFile: 'ci-cd-textarea.css',
     },
     {
         name: 'auto-check-delete-branch',
@@ -20,6 +20,13 @@ const AVAILABLE_FIXTURES = [
         description: 'Automatically check delete source branch in new-mergerequest page',
         urlPathRegex: /^\/\S+\/-\/merge_requests\/new$/,
         scriptFile: 'auto-check-delete-branch.js',
+    },
+    {
+        name: 'text-area-expand-new-pipeline',
+        value: 'text-area-expand-new-pipeline',
+        description: 'Expand textarea on new pipeline page',
+        urlPathRegex: /^\/\S+\/pipelines\/new$/,
+        styleFile: 'text-area-expand-new-pipeline.css',
     },
 ];
 
