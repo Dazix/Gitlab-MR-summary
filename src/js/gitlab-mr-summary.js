@@ -177,10 +177,10 @@ class GitlabMRSummary {
         for (let mr of this.#mergeRequestsData.mergeRequests) {
             let haystack = mr.title + mr.author.name + mr.project.nameWithNamespace + mr.project.pathWithNamespace + mr.sourceBranch + mr.targetBranch;
             
-            haystack = haystack.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            haystack = haystack.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
             
             let mrElement = document.querySelector(`[data-merge-request-unique-id="${mr.uniqueId}"]`);
-            if (haystack.search(phrase) !== -1) {
+            if (haystack.search(phrase.toLowerCase()) !== -1) {
                 mrElement.classList.remove('is-hidden');
             } else {
                 mrElement.classList.add('is-hidden');
