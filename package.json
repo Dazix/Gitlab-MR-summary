@@ -7,7 +7,7 @@
         "url": "https://github.com/Dazix/Gitlab-MR-summary/issues"
     },
     "devDependencies": {
-        "@babel/core": "^7.8.4",
+        "@babel/core": "^7.9.0",
         "@babel/plugin-proposal-class-properties": "^7.8.3",
         "@babel/plugin-syntax-class-properties": "^7.8.3",
         "del": "~5.1.0",
@@ -16,8 +16,8 @@
         "gulp-watch": "~5.0.1",
         "gulp-zip": "~5.0.1",
         "less": "~3.11.1",
-        "rollup": "^1.31.1",
-        "rollup-plugin-babel": "^4.3.3"
+        "rollup": "^2.6.1",
+        "rollup-plugin-babel": "^4.4.0"
     },
     "scripts": {
         "develop": "gulp develop",
