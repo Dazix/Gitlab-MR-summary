@@ -7,6 +7,8 @@ import StorageManagerObject from "./storageManagerObject";
 import Data from "./data";
 import {sleep} from "./utils";
 import {getAvailableFixture} from "./fixtures";
+import MergeRequest from "./mergeRequest";
+import Project from "./project";
 
 const CONTEXT_MENU_ITEM_CHANGELOG_ID = '3366';
 
@@ -124,8 +126,9 @@ async function webRequestsCallback(details) {
                 && details.statusCode >= 200 && details.statusCode < 300
             ) {
                 let [path, projectPathWithNamespace, mergeRequestIid] = matches;
+                let tmpActualMRObject = new MergeRequest({iid: mergeRequestIid, project: new Project({pathWithNamespace: projectPathWithNamespace})})
                 dataObject.mergeRequests = dataObject.mergeRequests
-                    .filter(mergeRequest => mergeRequest.project.pathWithNamespace !== projectPathWithNamespace && mergeRequest.iid !== mergeRequestIid);
+                    .filter(mergeRequest => mergeRequest.uniqueId !== tmpActualMRObject.uniqueId);
                 
                 await storage.setDomainData(details.url, {mergeRequestsData: dataObject.getAsSimpleDataObject()});
                 sendUpdatedDataToTabs(details.url, dataObject.getAsSimpleDataObject());
