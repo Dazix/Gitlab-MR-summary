@@ -19,7 +19,7 @@
         "128": "images/icon128.png"
     },
     "options_ui": {
-        "page": "options/page.html",
+        "page": "options/options.html",
         "open_in_tab": true
     },
 

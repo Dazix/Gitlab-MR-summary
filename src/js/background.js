@@ -31,19 +31,21 @@ chrome.runtime.onInstalled.addListener((details) => {
     let storage = new StorageManagerObject();
     if (details.reason === 'update') {
         // fix compatibility with new version
-        storage.get('domains')
+        storage.getDomainData()
             .then(domains => {
                 if (domains.length) {
                     let data = {};
                     for (let domain of domains) {
-                        domain.cacheTime = 5;
+                        if (!('removeActualUserFromParticipantsView' in domain)) {
+                            domain.removeActualUserFromParticipantsView = true;
+                        }
                         data[storage.getKeyFromUrl(domain.url)] = domain;
                     }
+
                     return data;
                 }
             })
             .then(newDomainsData => storage.set(newDomainsData))
-            .then(() => storage.remove('domains'))
             .catch((err) => {
                 console.debug(err);
             });
@@ -265,7 +267,7 @@ function sendUpdatedDataToTabs(url, data) {
 
 /**
  * @param usersUrl
- * @return {Promise<{data: {url: string, dummyUsersId: number[], cacheTime: number, mergeRequestsData: {mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}}, type: string, token: string}|{authPending: boolean}>}
+ * @return {Promise<{data: {url: string, dummyUsersId: number[], cacheTime: number, removeActualUserFromParticipantsView: boolean, mergeRequestsData: {mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}}, type: string, token: string}|{authPending: boolean}>}
  */
 async function getDomainData(usersUrl) {
     let storage = new StorageManagerObject();

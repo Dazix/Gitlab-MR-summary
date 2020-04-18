@@ -9,7 +9,7 @@ class GitlabMRSummary {
     /** @type {HTMLContent} */
     #htmlGenerator;
     
-    /** @type {{url: string, dummyUsersId: number[], cacheTime: number, mergeRequestsData: {mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}}} */
+    /** @type {{url: string, dummyUsersId: number[], cacheTime: number, removeActualUserFromParticipantsView: boolean, mergeRequestsData: {mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}}} */
     #domainData;
     
     /** @type {Messenger} */
@@ -19,7 +19,7 @@ class GitlabMRSummary {
     #mergeRequestsData;
     
     /**
-     * @param {{url: string, dummyUsersId: number[], cacheTime: number, mergeRequestsData: {mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}}} domainData
+     * @param {{url: string, dummyUsersId: number[], cacheTime: number, removeActualUserFromParticipantsView: boolean, mergeRequestsData: {mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}}} domainData
      * @param {HTMLContent} htmlGenerator
      * @param {Messenger} messenger
      */
@@ -35,6 +35,7 @@ class GitlabMRSummary {
     }
 
     async run() {
+        // validates data and download them if needed
         let data = await this._getData();
         this._show(data);
         this._observeUsersActions();
@@ -60,10 +61,15 @@ class GitlabMRSummary {
     _show(data) {
         let dropdown = this._getDropdown();
         if (data.errorMessage === undefined || data.age !== undefined) {
-            data.mergeRequests = this._removeParticipantsFromMergeRequestsByIds(
-                data.mergeRequests,
-                [data.user.id].concat(this.#domainData.dummyUsersId),
-            );
+            let idsToRemove = [];
+            this.#domainData.removeActualUserFromParticipantsView && idsToRemove.push(data.user.id);
+            idsToRemove = idsToRemove.concat(this.#domainData.dummyUsersId);
+            if (idsToRemove.length) {
+                data.mergeRequests = this._removeParticipantsFromMergeRequestsByIds(
+                    data.mergeRequests,
+                    idsToRemove,
+                );
+            }
             let htmlFragments = this.#htmlGenerator.renderList(data);
             dropdown.querySelector('.js-merge-requests-cont__list').innerHTML = htmlFragments.mergeRequestsOverview;
             dropdown.querySelector('.js-merge-requests-cont__last-update').innerHTML = htmlFragments.lastUpdate;
@@ -83,6 +89,8 @@ class GitlabMRSummary {
     }
 
     /**
+     * validates data and call for download them if needed
+     * 
      * @param forceLoad
      * @return {Data}
      */

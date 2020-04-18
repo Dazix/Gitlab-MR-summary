@@ -48,7 +48,7 @@ export function getAvailableFixture(enabledFixtures, url) {
  * @return {string}
  */
 export function renderFixtureInputs(selectedValues = [], disableTextWrap = false) {
-    let uniqueId = Date.now();
+    let uniqueId = Math.random();
     let ret = ``;
     for (let fixture of AVAILABLE_FIXTURES) {
         ret += `

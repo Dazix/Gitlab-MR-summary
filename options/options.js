@@ -45,7 +45,8 @@ class Options {
                     domainSettings.auth.token ? this._obfuscateToken(domainSettings.auth.token) : '',
                     domainSettings.dummyUsersId,
                     domainSettings.cacheTime,
-                    domainSettings.fixtures
+                    domainSettings.fixtures,
+                    domainSettings.removeActualUserFromParticipantsView
                 );
             }
         } catch (e) {
@@ -80,7 +81,8 @@ class Options {
                         formData.get('token'),
                         dummyUsersId,
                         parseInt(formData.get('cache-time')),
-                        formData.getAll('fixtures')
+                        formData.getAll('fixtures'),
+                        !!formData.get('remove-actual-user-from-participants')
                     );
                 };
                 this.permissionManager.request([], [domainUrl])
@@ -111,6 +113,7 @@ class Options {
                 let cacheTime = parseInt(row.querySelector('.js-input-cache-time').value);
                 let fixtures = [].filter.call(row.querySelectorAll('input[name="fixtures"]'), input => input.checked)
                     .map(input => input.value);
+                let removeActualUserFromParticipantsView = row.querySelector('input[name="remove-actual-user-from-participants"]').checked
                 let showInfoRow = (message, type = 'success') => {
                     let colSpanNum = row.children.length;
                     let newRow = document.createElement('tr');
@@ -126,7 +129,8 @@ class Options {
                     null,
                     dummyUsersId,
                     cacheTime,
-                    fixtures
+                    fixtures,
+                    removeActualUserFromParticipantsView
                 ).then(() => {
                     showInfoRow('Successfully updated.');
                 }).catch(() => {
@@ -141,18 +145,23 @@ class Options {
         tableBody.innerHTML = '';
     }
 
-    _insertRow(index, domain, authType, token, dummyUsersId, cacheTime, selectedFixtures) {
+    _insertRow(index, domain, authType, token, dummyUsersId, cacheTime, selectedFixtures, removeActualUserFromParticipantsView) {
         let tableBody = document.querySelector('.js-sites-table__body');
-        tableBody.insertAdjacentHTML('afterbegin', this._renderRow(index, domain, authType, token, dummyUsersId, cacheTime, selectedFixtures));
+        tableBody.insertAdjacentHTML('afterbegin', this._renderRow(index, domain, authType, token, dummyUsersId, cacheTime, selectedFixtures, removeActualUserFromParticipantsView));
     }
 
-    _renderRow(index, domain, authType, token, dummyUsersId, cacheTime, selectedFixtures) {
+    _renderRow(index, domain, authType, token, dummyUsersId, cacheTime, selectedFixtures, removeActualUserFromParticipantsView) {
         selectedFixtures = selectedFixtures || [];
+        let uniqueId = Math.random();
         return `<tr>
                     <td>${domain}</td>
                     <td>${authType}</td>
                     <td>${token}</td>
                     <td><input class="js-input-dummy-user-id e-input" type="text" value="${dummyUsersId ? dummyUsersId.join(',') : ''}" pattern="^(\d+,?)*$"></td>
+                    <td><div style="display: flex" class="u-align-center">
+                        <input class="e-input" id="remove-actual-user-from-participants-${uniqueId}" type="checkbox" value="1" name="remove-actual-user-from-participants"${removeActualUserFromParticipantsView ? ' checked':''}>
+                        <label for="remove-actual-user-from-participants-${uniqueId}" class="e-input e-input--faux" aria-hidden="true"></label>
+                    </div></td>
                     <td><input class="c-actual-domains__cache-time js-input-cache-time e-input" type="number" min="1" size="3" value="${cacheTime}"></td>
                     <td class="c-hover-popup">
                         <span class="e-action">select</span>
@@ -171,7 +180,7 @@ class Options {
         return token.substr(0, 2) + '*****' + token.substr(token.length - 2, token.length);
     }
 
-    async _saveNewOrUpdateDomain(domain, authType, token, dummyUsersId, cacheTime, fixtures) {
+    async _saveNewOrUpdateDomain(domain, authType, token, dummyUsersId, cacheTime, fixtures, removeActualUserFromParticipantsView) {
         try {
             let data = {};
             let auth = {};
@@ -184,6 +193,7 @@ class Options {
             data.cacheTime = cacheTime;
             data.url = domain;
             data.fixtures = fixtures;
+            data.removeActualUserFromParticipantsView = removeActualUserFromParticipantsView;
             
             await this._saveData(domain, data);
         } catch (e) {
