@@ -9,7 +9,7 @@
     <div class="o-wrapper">    
         <form class="c-form js-form-add">
             <fieldset>
-                <legend class="u-beta">Gitlab settings</legend>
+                <legend class="u-beta">Gitlab MR summary - <span class="u-color-text-light">Gitlab settings</span></legend>
                 <div class="c-notice">
                     <svg class="c-notice__icon e-icon e-icon--circle u-beta" aria-hidden="true"><use xlink:href="#info"></use></svg>
                     <p class="c-notice__content">Extension require these scopes to be enabled for given token: <span class="u-bold">read_user</span>, <span class="u-bold">api</span>.</p>
@@ -42,12 +42,19 @@
                         <div class="o-layout o-layout--equal">
                             <fieldset class="o-layout__item">
                                 <legend class="u-text-no-wrap u-gamma">Additional settings</legend>
-                                <div class="c-form-cell">
-                                    <label for="dummy-users-id-input" class="c-form-cell__label u-epsilon">Dummy users ID: <span class="u-milli u-color-text-light">(comma separated list of IDs)</span></label>
-                                    <input class="e-input" id="dummy-users-id-input" type="text" name="dummy-users-id" pattern="^(\d+,?)*$" placeholder="123456,123456,123456">
-                                    <div class="c-form-cell__error c-notice c-notice--small c-notice--point-top">
-                                        <svg class="c-notice__icon e-icon e-icon--circle u-delta" aria-hidden="true"><use xlink:href="#info"></use></svg>
-                                        <p class="c-notice__content">If for some reason you use some dummy users in groups, here you can exclude them from view.</p>
+                                <div>
+                                    <div class="c-form-cell u-tight">
+                                        <label for="dummy-users-id-input" class="c-form-cell__label u-epsilon">Dummy users ID: <span class="u-milli u-color-text-light">(comma separated list of IDs)</span></label>
+                                        <div class="c-form-cell__error c-notice c-notice--small c-notice--point-bottom">
+                                            <svg class="c-notice__icon e-icon e-icon--circle u-delta" aria-hidden="true"><use xlink:href="#info"></use></svg>
+                                            <p class="c-notice__content">If for some reason you use some dummy users in groups, here you can exclude them from view.</p>
+                                        </div>
+                                        <input class="e-input" id="dummy-users-id-input" type="text" name="dummy-users-id" pattern="^(\d+,?)*$" placeholder="123456,123456,123456">
+                                    </div>
+                                    <div class="c-form-cell c-form-cell--inline">
+                                        <input class="e-input" id="remove-actual-user-from-participants" type="checkbox" value="1" name="remove-actual-user-from-participants" checked>
+                                        <label for="remove-actual-user-from-participants" class="e-input e-input--faux" aria-hidden="true"></label>
+                                        <label for="remove-actual-user-from-participants" class="c-form-cell__label u-epsilon">Remove actual user from participants view</label>
                                     </div>
                                 </div>
                                 <div class="c-form-cell">
@@ -70,8 +77,9 @@
                     <tr>
                         <th>Domain</th>
                         <th>Auth type</th>
-                        <th>App ID / Private token</th>
+                        <th class="u-align-center">App ID / Private<br/> token</th>
                         <th>Dummy users Id</th>
+                        <th class="u-align-center">Remove actual<br/> user</th>
                         <th>Cache time</th>
                         <th>Fixtures</th>
                         <th></th>

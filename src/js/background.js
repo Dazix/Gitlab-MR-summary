@@ -7,6 +7,8 @@ import StorageManagerObject from "./storageManagerObject";
 import Data from "./data";
 import {sleep} from "./utils";
 import {getAvailableFixture} from "./fixtures";
+import MergeRequest from "./mergeRequest";
+import Project from "./project";
 
 const CONTEXT_MENU_ITEM_CHANGELOG_ID = '3366';
 
@@ -29,19 +31,21 @@ chrome.runtime.onInstalled.addListener((details) => {
     let storage = new StorageManagerObject();
     if (details.reason === 'update') {
         // fix compatibility with new version
-        storage.get('domains')
+        storage.getDomainData()
             .then(domains => {
                 if (domains.length) {
                     let data = {};
                     for (let domain of domains) {
-                        domain.cacheTime = 5;
+                        if (!('removeActualUserFromParticipantsView' in domain)) {
+                            domain.removeActualUserFromParticipantsView = true;
+                        }
                         data[storage.getKeyFromUrl(domain.url)] = domain;
                     }
+
                     return data;
                 }
             })
             .then(newDomainsData => storage.set(newDomainsData))
-            .then(() => storage.remove('domains'))
             .catch((err) => {
                 console.debug(err);
             });
@@ -124,8 +128,9 @@ async function webRequestsCallback(details) {
                 && details.statusCode >= 200 && details.statusCode < 300
             ) {
                 let [path, projectPathWithNamespace, mergeRequestIid] = matches;
+                let tmpActualMRObject = new MergeRequest({iid: mergeRequestIid, project: new Project({pathWithNamespace: projectPathWithNamespace})})
                 dataObject.mergeRequests = dataObject.mergeRequests
-                    .filter(mergeRequest => mergeRequest.project.pathWithNamespace !== projectPathWithNamespace && mergeRequest.iid !== mergeRequestIid);
+                    .filter(mergeRequest => mergeRequest.uniqueId !== tmpActualMRObject.uniqueId);
                 
                 await storage.setDomainData(details.url, {mergeRequestsData: dataObject.getAsSimpleDataObject()});
                 sendUpdatedDataToTabs(details.url, dataObject.getAsSimpleDataObject());
@@ -262,7 +267,7 @@ function sendUpdatedDataToTabs(url, data) {
 
 /**
  * @param usersUrl
- * @return {Promise<{data: {url: string, dummyUsersId: number[], cacheTime: number, mergeRequestsData: {mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}}, type: string, token: string}|{authPending: boolean}>}
+ * @return {Promise<{data: {url: string, dummyUsersId: number[], cacheTime: number, removeActualUserFromParticipantsView: boolean, mergeRequestsData: {mergeRequests: (*[]), user: ({groupsId: number[], approved: boolean, avatarUrl: string, name: string, id: number}), age: (string)}}, type: string, token: string}|{authPending: boolean}>}
  */
 async function getDomainData(usersUrl) {
     let storage = new StorageManagerObject();
