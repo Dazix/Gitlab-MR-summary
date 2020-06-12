@@ -4,7 +4,7 @@
         let checkExist = setInterval(() => {
             let mergeButton = d.querySelector('.accept-merge-request') || d.querySelector('.js-disabled-merge-button');
             if (mergeButton) {
-                mergeButton.innerHTML = 'Merge (<blink>' + currentCommitCount + ' commits</blink>)';
+                mergeButton.innerHTML += ' (<blink>' + currentCommitCount + ' commits</blink>)';
 
                 let blinkElm = mergeButton.querySelector('blink');
                 blinkElm.style.transition = 'opacity 200ms';
