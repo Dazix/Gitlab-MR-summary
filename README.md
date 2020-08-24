@@ -9,7 +9,7 @@ Extension uses Gitlab API for getting all required data about projects and their
 
 Since v2.0.0+ data are stored locally for some time (can be set on options page) and synced over all tabs with same domain as your Gitlab has, so no more waiting for download on new/next page. 
 
-Gitlab API is read/write and unfortunetly, you can't restrict your tokens only for read access. But don't worry **extension only reads data and never writes them**. All downloaded data are stored locally and they are downloaded again on some change (approve, merge). 
+Personal access tokens can now have restricted read-only access (since Gitlab 12.10.0 (2020-04-22)), so for security reasons, I recommend using these restricted ones. All downloaded data are stored locally and they are downloaded again on some change (approve, merge). 
 
 ### Setup
 1. Get extension for your browser

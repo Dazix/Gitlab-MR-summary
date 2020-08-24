@@ -2,4 +2,3 @@ node_modules
 *.css
 *.zip
 build
-package-lock.json
