@@ -38,6 +38,7 @@ If you are used to squash commits before merging and sometimes you forget it, fi
 </p>
 The second fixture helps with preview of variables (when you click on reveal values) and in edit modal window set bigger height for textarea.
 3. Automatically check delete source branch in new-mergerequest page
+
 ![auto check delete branch](images/readme/fixture__auto-check-delete-branch.png)
 And third one automatically check option *Delete source branch when merge request is accepted* on merge request create page.
 
