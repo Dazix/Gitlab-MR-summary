@@ -1,6 +1,6 @@
 {
     "name": "Gitlab MR summary",
-    "version": "2.5.4",
+    "version": "2.5.5",
     "description": "Gitlab MR summary",
     "author": "David Šanda <sanda.david+gitlab-mr-summary@gmail.com>",
     "manifest_version": 2,
@@ -45,6 +45,7 @@
         "https://*/"
     ],
     "web_accessible_resources": [
-        "font/source-sans-variable.woff2"
+        "font/source-sans-variable.woff2",
+        "gitlab-mr-summary.css"
     ]
 }

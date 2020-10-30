@@ -173,7 +173,7 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async details => {
 
             if (domainData.token) {
                 await executeScript(details.tabId, 'gitlab-mr-summary.js')
-                    .then(() => insertCss(details.tabId, 'gitlab-mr-summary.css'));
+                    .then(() => insertCss(details.tabId, 'gitlab-mr-summary.css', true));
             }
 
             if (domainData.data.fixtures
@@ -183,7 +183,7 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async details => {
                     promises = [];
                 for (let fixture of fixturesToRun) {
                     if (fixture.styleFile) {
-                        promises.push(insertCss(details.tabId, `fixtures/${fixture.styleFile}`))
+                        promises.push(insertCss(details.tabId, `fixtures/${fixture.styleFile}`, fixture.allowOverrideStyle))
                     }
                     if (fixture.scriptFile) {
                         promises.push(executeScript(details.tabId, `fixtures/${fixture.scriptFile}`));
@@ -308,11 +308,32 @@ function executeScript(tabId, filePath) {
     });
 }
 
-function insertCss(tabId, filePath) {
+/**
+ * @param {number} tabId
+ * @param {string} filePath
+ * @param {boolean} allowOverride    if true file must have entry in manifest web_accessible_resources array
+ * @return {Promise<>}
+ */
+function insertCss(tabId, filePath, allowOverride = false) {
     return new Promise((resolve, reject) => {
-        chrome.tabs.insertCSS(tabId, {file: filePath}, () => {
-            resolve()
-        });
+        if (!allowOverride) {
+            chrome.tabs.insertCSS(tabId, {file: filePath}, () => {
+                resolve()
+            });
+        } else {
+            let code = `
+                (() => {
+                    var link = document.createElement("link");
+                    link.href = chrome.extension.getURL('${filePath}');
+                    link.type = "text/css";
+                    link.rel = "stylesheet";
+                    document.getElementsByTagName("head")[0].appendChild(link);
+                })()
+            `;
+            chrome.tabs.executeScript(tabId, {code: code}, () => {
+                resolve()
+            });
+        }
     });
 }
 
