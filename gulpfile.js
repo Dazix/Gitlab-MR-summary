@@ -4,6 +4,7 @@ const less = require('gulp-less');
 const del = require('del');
 const rollup = require('rollup');
 const babel = require('rollup-plugin-babel');
+const debug = process.env.DEBUG_EXTENSION === '1';
 
 const buildJs = (inputFile, outputFile) => {
     return async cb => {
@@ -19,7 +20,7 @@ const buildJs = (inputFile, outputFile) => {
         await bundle.write({
             file: outputFile,
             format: 'iife',
-            sourcemap: true,
+            sourcemap: debug,
         });
 
         cb();

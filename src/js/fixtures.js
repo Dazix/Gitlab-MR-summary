@@ -13,6 +13,7 @@ const AVAILABLE_FIXTURES = [
         urlPathRegex: /^\/\S+\/-\/settings\/ci_cd$/,
         scriptFile: 'ci-cd-textarea.js',
         styleFile: 'ci-cd-textarea.css',
+        allowOverrideStyle: false,
     },
     {
         name: 'auto-check-delete-branch',
@@ -27,19 +28,21 @@ const AVAILABLE_FIXTURES = [
         description: 'Expand textarea on new pipeline page',
         urlPathRegex: /^\/\S+\/pipelines\/new$/,
         styleFile: 'text-area-expand-new-pipeline.css',
+        allowOverrideStyle: false,
     },
 ];
 
 /**
  * @param {string[]} enabledFixtures
  * @param {string} url
- * @return {{scriptFile: string, styleFile: string}}
+ * @return {{scriptFile: string, styleFile: string, allowOverrideStyle: boolean}[]}
  */
 export function getAvailableFixture(enabledFixtures, url) {
     let urlPath = new URL(url).pathname;
     return AVAILABLE_FIXTURES
-        .filter(fixture => enabledFixtures.includes(fixture.value) && urlPath.match(fixture.urlPathRegex))
-        .map(fixture => {return {scriptFile: fixture.scriptFile, styleFile: fixture.styleFile}});
+        .filter(fixture => enabledFixtures.includes(fixture.value))
+        .filter(fixture => urlPath.match(fixture.urlPathRegex))
+        .map(({scriptFile, styleFile, allowOverrideStyle}) => ({scriptFile, styleFile, allowOverrideStyle}));
 }
 
 /**
