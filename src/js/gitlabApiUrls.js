@@ -13,7 +13,7 @@ export default class GitlabApiUrls {
     get user() {return `${this.#domain}/api/v4/user`;}
     get groups() {return `${this.#domain}/api/v4/groups`;}
     get groupMembers() {return `${this.#domain}/api/v4/groups/:id:/members/all`;}
-    get projects() {return `${this.#domain}/api/v4/projects`;}
+    get projects() {return `${this.#domain}/api/v4/projects?membership=true`;}
     get projectMRs() {return `${this.#domain}/api/v4/projects/:project_id:/merge_requests?state=opened`;}
     get projectMRsParticipants() {return `${this.#domain}/api/v4/projects/:project_id:/merge_requests/:merge_request_iid:/participants`;}
     get mergeRequestApprovals() {return `${this.#domain}/api/v4/projects/:project_id:/merge_requests/:merge_request_iid:/approvals`;}
