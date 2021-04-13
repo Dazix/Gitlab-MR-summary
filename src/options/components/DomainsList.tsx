@@ -1,21 +1,15 @@
 import * as React from "react";
-import {useEffect, useState} from "react";
-import StorageManagerObject from "../../js/storageManagerObject";
+import {FC} from "react";
 import {DomainsT} from "../../@types/domains";
 import {DomainRow} from "./DomainRow";
 import {obfuscateToken} from "../helper";
 
-export const DomainsList = () => {
-    const storage = new StorageManagerObject();
-    const [domainsData, setDomainsData] = useState<DomainsT | null>(null);
+type Props = {
+    domainsData: DomainsT;
+    domainAttrsChangeHandler: (domainUrl: string, key: string, value: string|boolean, state?: boolean) => void;
+};
 
-    useEffect(() => {
-        const loadData = async () => {
-            const data = await storage.getDomainData();
-            setDomainsData(data)
-        }
-        loadData();
-    }, []);
+export const DomainsList: FC<Props> = ({ domainsData, domainAttrsChangeHandler }) => {
 
     return (
         <form className="js-form-actual-settings">
@@ -36,7 +30,9 @@ export const DomainsList = () => {
                 {domainsData && Object.entries(domainsData).map(([domain, data]) => (
                     <DomainRow key={domain} fixtures={data.fixtures} cacheTime={data.cacheTime} dummyUsersId={data.dummyUsersId}
                                removeActualUserFromParticipantsView={data.removeActualUserFromParticipantsView}
-                               url={data.url} type={data.auth.type} token={obfuscateToken(data.auth.token)}/>))}
+                               url={data.url} type={data.auth.type} token={obfuscateToken(data.auth.token)} domainAttrsChangeHandler={domainAttrsChangeHandler}/>
+                    )
+                )}
                 </tbody>
             </table>
         </form>

@@ -3,11 +3,13 @@ import {useState} from "react";
 import {AVAILABLE_FIXTURES} from "../../js/fixtures";
 import {FixtureT} from "../../@types/fixture";
 import {FixtureInput} from "./FixtureInput";
+import PermissionsManager from "../../js/permissions-manager";
 
-export const AddForm = () => {
+export const AddForm = ({ handleSubmit }: {handleSubmit: (formData: FormData) => void}) => {
     const [authType, setAuthType] = useState<string>('private');
     const [oauthUrlCopied, setOauthUrlCopied] = useState<boolean>(false);
     const oauthRedirectUrl = chrome.identity.getRedirectURL();
+    const permissionManager = new PermissionsManager();
 
     const handleAuthChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const target = event.target;
@@ -23,35 +25,21 @@ export const AddForm = () => {
         setTimeout(() => setOauthUrlCopied(false), 2000);
     };
     
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        const form = event.target as HTMLFormElement;
+    const handleAdd = (event: React.ChangeEvent<HTMLFormElement>) => {
+        const form = event.target;
         const formIsValid = form.reportValidity();
         if (formIsValid) {
             const formData = new FormData(form);
             // @ts-ignore
             let domainUrl = (new URL(formData.get('domain'))).toString();
-            let dummyUsersId = formData.get('dummy-users-id') ? formData.get('dummy-users-id')?.toString().split(',').map(id => parseInt(id)) : [];
-            let saveDomain = () => {
-                return this._saveNewOrUpdateDomain(
-                    domainUrl,
-                    formData.get('auth_type'),
-                    formData.get('token'),
-                    dummyUsersId,
-                    parseInt(formData.get('cache-time')),
-                    formData.getAll('fixtures'),
-                    !!formData.get('remove-actual-user-from-participants')
-                );
-            };
-            this.permissionManager.request([], [domainUrl])
-                .then(saveDomain.bind(this))
-                .then(this._init.bind(this))
-                .then(() => form.reset())
-                .catch(err => console.error(err));
+            permissionManager.request([], [domainUrl])
+                .then(() => handleSubmit(formData))
+                .then(() => form.reset());
         }
     };
 
     return (
-        <form className="c-form" onSubmit={handleSubmit}>
+        <form className="c-form" onSubmit={handleAdd}>
             <fieldset>
                 <legend className="u-beta">Gitlab MR summary - <span
                     className="u-color-text-light">Gitlab settings</span></legend>
@@ -142,7 +130,8 @@ export const AddForm = () => {
                                 {AVAILABLE_FIXTURES.map((fixture: FixtureT, index: number) => <FixtureInput key={index}
                                                                                                             fixture={fixture}
                                                                                                             checked={false}
-                                                                                                            disableTextWrap={true}/>)}
+                                                                                                            disableTextWrap={true}
+                                                                                                            changeHandler={() => {}}/>)}
                             </fieldset>
                         </div>
                     </fieldset>

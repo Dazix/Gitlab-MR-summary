@@ -7,14 +7,15 @@ type Props = {
     disableTextWrap: boolean;
     checked: boolean;
     fixture: FixtureT;
+    changeHandler: (state: boolean) => void;
 };
 
-export const FixtureInput: FC<Props> = ({fixture, checked, disableTextWrap = false}) => {
+export const FixtureInput: FC<Props> = ({fixture, checked, changeHandler, disableTextWrap = false}) => {
     const uniqueId = new Date().getTime();
     return (
         <div className="c-form-cell c-form-cell--inline">
             <input className="e-input" id={`fixture__${fixture.name}-${uniqueId}`} type="checkbox" name="fixtures"
-                   value={fixture.value} defaultChecked={checked} />
+                   value={fixture.value} defaultChecked={checked} onChange={e => changeHandler(e.target.checked)}/>
             <label htmlFor={`fixture__${fixture.name}-${uniqueId}`} className="e-input e-input--faux" aria-hidden="true"/>
             <label htmlFor={`fixture__${fixture.name}-${uniqueId}`}
                    className={classNames('c-form-cell__label', 'u-epsilon', {'u-text-no-wrap': disableTextWrap})}>

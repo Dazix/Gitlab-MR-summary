@@ -11,6 +11,7 @@ type Props =
     & {
     token: string;
     dummyUsersId: number[];
+    domainAttrsChangeHandler: (domainUrl: string, key: string, value: string|boolean, state?: boolean) => void
 };
 
 export const DomainRow: FC<Props> = ({
@@ -20,7 +21,8 @@ export const DomainRow: FC<Props> = ({
                                          dummyUsersId,
                                          removeActualUserFromParticipantsView,
                                          cacheTime,
-                                         fixtures
+                                         fixtures,
+                                         domainAttrsChangeHandler
                                      }) => {
     const uniqueId = new Date().getTime();
     return (
@@ -29,19 +31,19 @@ export const DomainRow: FC<Props> = ({
             <td>{authType}</td>
             <td>{token}</td>
             <td>
-                <input className="e-input" type="text" value={dummyUsersId.join(',')} pattern="^(\d+,?)*$"/>
+                <input className="e-input" type="text" value={dummyUsersId.join(',')} pattern="^(\d+,?)*$" onChange={e => domainAttrsChangeHandler(url, 'dummyUsersId', e.target.value)}/>
             </td>
             <td>
                 <div className="u-align-center">
                     <input className="e-input" id={`remove-actual-user-from-participants-${uniqueId}`} type="checkbox"
                            value="1" name="remove-actual-user-from-participants"
-                           defaultChecked={removeActualUserFromParticipantsView}/>
+                           defaultChecked={removeActualUserFromParticipantsView} onChange={e => domainAttrsChangeHandler(url, 'removeActualUserFromParticipantsView', e.target.checked)}/>
                     <label htmlFor={`remove-actual-user-from-participants-${uniqueId}`}
                            className="e-input e-input--faux" aria-hidden="true"/>
                 </div>
             </td>
             <td><input className="c-actual-domains__cache-time js-input-cache-time e-input" type="number" min="1"
-                       size={3} value={cacheTime}/>
+                       size={3} value={cacheTime} onChange={e => domainAttrsChangeHandler(url, 'cacheTime', e.target.value)}/>
             </td>
             <td className="c-hover-popup">
                 <span className="e-action">select</span>
@@ -49,16 +51,13 @@ export const DomainRow: FC<Props> = ({
                     {AVAILABLE_FIXTURES.map((fixture: FixtureT, index: number) => <FixtureInput key={index}
                                                                                                 fixture={fixture}
                                                                                                 checked={fixtures.includes(fixture.value)}
-                                                                                                disableTextWrap={true}/>)}
+                                                                                                disableTextWrap={true}
+                                                                                                changeHandler={(state: boolean) => domainAttrsChangeHandler(url, 'fixtures', fixture.value, state)}/>)}
                 </div>
             </td>
             <td className="c-actual-domains__buttons">
-                <button className="c-actual-domains__button js-update-button e-button e-button--positive" name="update"
-                        value={url}>
-                    UPDATE
-                </button>
-                <button className="c-actual-domains__button js-del-button e-button e-button--negative" name="del"
-                        value={url}>DELETE
+                <button className="c-actual-domains__button e-button e-button--negative">
+                    DELETE
                 </button>
             </td>
         </tr>
