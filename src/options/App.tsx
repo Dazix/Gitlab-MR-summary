@@ -3,7 +3,7 @@ import StorageManagerObject from "../js/storageManagerObject";
 import {AddForm} from "./components/AddForm";
 import {DomainsList} from "./components/DomainsList";
 import {useEffect, useState} from "react";
-import {DomainsT} from "../@types/domains";
+import {DomainT} from "../@types/domains";
 import {saveNewDomain, updateDomain} from "./helper";
 
 export const Options = () => {
@@ -11,7 +11,7 @@ export const Options = () => {
 
     storage.set({options_shown: true});
     
-    const [domainsData, setDomainsData] = useState<DomainsT>({});
+    const [domainsData, setDomainsData] = useState<DomainT[]>([]);
     
     const handleAddDomain = (formData: FormData) => {
         // @ts-ignore
@@ -24,11 +24,12 @@ export const Options = () => {
             formData.get('token')?.toString(),
             dummyUsersId,
             parseInt(formData.get('cache-time')?.toString() || '0'),
-            Array.from(formData.getAll('fixtures'), (v, i):string => i.toString()),
+            Array.from(formData.getAll('fixtures'), (v):string => v.toString()),
             !!formData.get('remove-actual-user-from-participants')
         )
-            .then((data) => {
-                setDomainsData({...domainsData, ...data})
+            .then(data => {
+                domainsData.push(data);
+                setDomainsData(domainsData);
             })
             .catch(err => console.error(err));
     };
@@ -40,7 +41,7 @@ export const Options = () => {
                 _value = value.toString().split(',').map((strNumber: string) => parseInt(strNumber));
                 break;
             case 'fixtures':
-                let _fixtures = domainsData[domainUrl].fixtures;
+                let _fixtures = domainsData.find(domainData => domainData.url === storage.getKeyFromUrl(domainUrl))?.fixtures || [];
                 if (state) {
                     _fixtures.push(value.toString())
                 } else {
@@ -57,10 +58,17 @@ export const Options = () => {
         
         // @ts-ignore
         updateDomain({domain: domainUrl, [key]: _value})
-            .then((data) => {
-                setDomainsData({...domainsData, ...data})
-            })
+            .then(data => setDomainsData(
+                domainsData.map(domainData => (domainData.url === storage.getKeyFromUrl(domainUrl)) ? data : domainData))
+            )
             .catch(err => console.error(err));
+    };
+    
+    const handleRemoveDomain = (domainUrl: string) => {
+        storage.remove(storage.getKeyFromUrl(domainUrl))
+            .then(() => setDomainsData(
+                domainsData.filter(domainData => domainData.url !== storage.getKeyFromUrl(domainUrl)))
+            );
     };
     
     useEffect(() => {
@@ -69,12 +77,14 @@ export const Options = () => {
             setDomainsData(data)
         }
         loadData();
-    }, []);
+    }, [JSON.stringify(domainsData)]);
 
     return (
         <>
             <AddForm handleSubmit={handleAddDomain} />
-            <DomainsList domainsData={domainsData} domainAttrsChangeHandler={handleDomainAttrChange}/>
+            <DomainsList domainsData={domainsData} 
+                         domainAttrsChangeHandler={handleDomainAttrChange}
+                         removeDomainHandler={handleRemoveDomain}/>
         </>
     );
 };

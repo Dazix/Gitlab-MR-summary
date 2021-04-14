@@ -1,15 +1,16 @@
 import * as React from "react";
 import {FC} from "react";
-import {DomainsT} from "../../@types/domains";
+import {DomainT} from "../../@types/domains";
 import {DomainRow} from "./DomainRow";
 import {obfuscateToken} from "../helper";
 
 type Props = {
-    domainsData: DomainsT;
+    domainsData: DomainT[];
     domainAttrsChangeHandler: (domainUrl: string, key: string, value: string|boolean, state?: boolean) => void;
+    removeDomainHandler: (domainUrl: string) => void;
 };
 
-export const DomainsList: FC<Props> = ({ domainsData, domainAttrsChangeHandler }) => {
+export const DomainsList: FC<Props> = ({ domainsData, domainAttrsChangeHandler, removeDomainHandler }) => {
 
     return (
         <form className="js-form-actual-settings">
@@ -27,10 +28,11 @@ export const DomainsList: FC<Props> = ({ domainsData, domainAttrsChangeHandler }
                 </tr>
                 </thead>
                 <tbody className="js-sites-table__body">
-                {domainsData && Object.entries(domainsData).map(([domain, data]) => (
-                    <DomainRow key={domain} fixtures={data.fixtures} cacheTime={data.cacheTime} dummyUsersId={data.dummyUsersId}
+                {domainsData && domainsData.map(data => (
+                    <DomainRow key={data.url} fixtures={data.fixtures} cacheTime={data.cacheTime} dummyUsersId={data.dummyUsersId}
                                removeActualUserFromParticipantsView={data.removeActualUserFromParticipantsView}
-                               url={data.url} type={data.auth.type} token={obfuscateToken(data.auth.token)} domainAttrsChangeHandler={domainAttrsChangeHandler}/>
+                               url={data.url} type={data.auth.type} token={obfuscateToken(data.auth.token)}
+                               domainAttrsChangeHandler={domainAttrsChangeHandler} removeDomainHandler={removeDomainHandler}/>
                     )
                 )}
                 </tbody>

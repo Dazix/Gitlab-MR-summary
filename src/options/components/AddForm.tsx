@@ -26,6 +26,7 @@ export const AddForm = ({ handleSubmit }: {handleSubmit: (formData: FormData) =>
     };
     
     const handleAdd = (event: React.ChangeEvent<HTMLFormElement>) => {
+        event.preventDefault();
         const form = event.target;
         const formIsValid = form.reportValidity();
         if (formIsValid) {

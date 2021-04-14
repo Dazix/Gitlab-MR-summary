@@ -11,7 +11,8 @@ type Props =
     & {
     token: string;
     dummyUsersId: number[];
-    domainAttrsChangeHandler: (domainUrl: string, key: string, value: string|boolean, state?: boolean) => void
+    domainAttrsChangeHandler: (domainUrl: string, key: string, value: string|boolean, state?: boolean) => void;
+    removeDomainHandler: (domainUrl: string) => void;
 };
 
 export const DomainRow: FC<Props> = ({
@@ -22,9 +23,17 @@ export const DomainRow: FC<Props> = ({
                                          removeActualUserFromParticipantsView,
                                          cacheTime,
                                          fixtures,
-                                         domainAttrsChangeHandler
+                                         domainAttrsChangeHandler,
+                                         removeDomainHandler
                                      }) => {
     const uniqueId = new Date().getTime();
+    
+    const deleteHandler = (e: React.MouseEvent<HTMLButtonElement>, url: string) => {
+        e.preventDefault();
+        
+        removeDomainHandler(url);
+    };
+    
     return (
         <tr>
             <td>{url}</td>
@@ -56,7 +65,7 @@ export const DomainRow: FC<Props> = ({
                 </div>
             </td>
             <td className="c-actual-domains__buttons">
-                <button className="c-actual-domains__button e-button e-button--negative">
+                <button className="c-actual-domains__button e-button e-button--negative" onClick={event => deleteHandler(event, url)}>
                     DELETE
                 </button>
             </td>

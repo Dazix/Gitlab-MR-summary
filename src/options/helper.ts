@@ -1,59 +1,53 @@
 import StorageManagerObject from "../js/storageManagerObject";
-import {DomainsT} from "../@types/domains";
+import {DomainT} from "../@types/domains";
 
 export const obfuscateToken = (token: string): string => token.substr(0, 2) + '*****' + token.substr(token.length - 2, token.length);
 
 export const saveNewDomain = async (
     domain: string,
-    authType: string | null = null,
-    token: string | null = null,
-    dummyUsersId: number[] = [],
-    cacheTime: number = 8,
-    fixtures: string[] = [],
-    removeActualUserFromParticipantsView: boolean = false
-): Promise<DomainsT> => {
-    try {
-        let data = {
-            dummyUsersId: dummyUsersId,
-            cacheTime: cacheTime,
-            url: domain,
-            fixtures: fixtures,
-            removeActualUserFromParticipantsView: removeActualUserFromParticipantsView,
-            ...(authType || token ? {auth: {...(authType ? {type: authType} : {}), ...(token ? {token: token} : {})}} : {})
-        };
+    authType?: string,
+    token?: string,
+    dummyUsersId?: number[],
+    cacheTime?: number,
+    fixtures?: string[],
+    removeActualUserFromParticipantsView?: boolean
+): Promise<DomainT> => {
+    let data = {
+        ...(dummyUsersId !== undefined ? {dummyUsersId: dummyUsersId.filter(v => Number.isInteger(v))} : {}),
+        ...(cacheTime !== undefined ? {cacheTime: cacheTime} : {}),
+        ...(domain !== undefined ? {url: domain} : {}),
+        ...(fixtures !== undefined ? {fixtures: fixtures} : {}),
+        ...(removeActualUserFromParticipantsView !== undefined ? {removeActualUserFromParticipantsView: removeActualUserFromParticipantsView} : {}),
+        ...(authType || token ? {auth: {...(authType ? {type: authType} : {}), ...(token ? {token: token} : {})}} : {}),
+    };
 
-        return await saveData(domain, data);
-    } catch (e) {
-        typeof console !== 'undefined' && console.error(e);
-        
-        return {};
-    }
+    return await saveData(domain, data);
 };
 
 type UpdateDomainT = {
     domain: string,
-    authType: string | null,
-    token: string | null,
-    dummyUsersId: number[],
-    cacheTime: number,
-    fixtures: string[],
-    removeActualUserFromParticipantsView: boolean
+    authType?: string,
+    token?: string,
+    dummyUsersId?: number[],
+    cacheTime?: number,
+    fixtures?: string[],
+    removeActualUserFromParticipantsView?: boolean
 };
 export const updateDomain = async (
     {
         domain,
-        authType = null,
-        token = null,
-        dummyUsersId = [],
-        cacheTime = 8,
-        fixtures = [],
-        removeActualUserFromParticipantsView = false
+        authType,
+        token,
+        dummyUsersId,
+        cacheTime,
+        fixtures,
+        removeActualUserFromParticipantsView
     }: UpdateDomainT
-): Promise<DomainsT> => {
+): Promise<DomainT> => {
     return await saveNewDomain(domain, authType, token, dummyUsersId, cacheTime, fixtures, removeActualUserFromParticipantsView);
 };
 
-const saveData = async (url: string, data: object): Promise<DomainsT> => {
+const saveData = async (url: string, data: object): Promise<DomainT> => {
     const storage = new StorageManagerObject();
     return await storage.setDomainData(url, data);
 }
