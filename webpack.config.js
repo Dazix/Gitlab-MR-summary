@@ -9,6 +9,7 @@ const {
 const config = {
     entry: {
         'options/options': path.join(__dirname, 'src/options/options.tsx'),
+        background: path.join(__dirname, "src/js/background.js"),
     },
     mode: NODE_ENV === 'production' ? 'production' : 'development',
     output: {
