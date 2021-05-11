@@ -17,4 +17,5 @@ export default class GitlabApiUrls {
     get projectMRs() {return `${this.#domain}/api/v4/projects/:project_id:/merge_requests?state=opened`;}
     get projectMRsParticipants() {return `${this.#domain}/api/v4/projects/:project_id:/merge_requests/:merge_request_iid:/participants`;}
     get mergeRequestApprovals() {return `${this.#domain}/api/v4/projects/:project_id:/merge_requests/:merge_request_iid:/approvals`;}
+    get graphQLEndpoint() {return `${this.#domain}/api/graphql`}
 }

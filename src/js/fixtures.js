@@ -1,4 +1,4 @@
-const AVAILABLE_FIXTURES = [
+export const AVAILABLE_FIXTURES = [
     {
         name: 'commits-count',
         value: 'commits-count',

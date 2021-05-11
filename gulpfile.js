@@ -50,7 +50,7 @@ const clean = () => {
 
 const moveStaticSource = gulp.parallel(
     function copyManifest() {return gulp.src(['manifest.json']).pipe(gulp.dest('./build'))},
-    function copyOptions() {return gulp.src(['options/**/*.html',]).pipe(gulp.dest('./build/options'))},
+    // function copyOptions() {return gulp.src(['options/**/*.html',]).pipe(gulp.dest('./build/options'))},
     function copyChangelog() {return gulp.src(['changelog/**/*.html',]).pipe(gulp.dest('./build/changelog'))},
     function copyImages() {return gulp.src(['images/**/*', '!images/readme/**/*',]).pipe(gulp.dest('./build/images'))},
     function copyImages() {return gulp.src(['src/**/*.woff2',]).pipe(gulp.dest('./build/'))},
@@ -60,7 +60,7 @@ const moveStaticSource = gulp.parallel(
 const jsBuild = gulp.parallel(
     buildJs('./src/js/gitlab-mr-summary.js', './build/gitlab-mr-summary.js'),
     buildJs('./src/js/background.js', './build/background.js'),
-    buildJs('./options/options.js', './build/options/options.js'),
+    // buildJs('./options/options.js', './build/options/options.js'),
 );
 
 const makeZip = () => {
@@ -71,7 +71,7 @@ const makeZip = () => {
 
 const lessBuild = gulp.parallel(
     buildLess('./src/css/gitlab-mr-summary.less', './build'),
-    buildLess('./options/style.less', './build/options'),
+    // buildLess('./options/style.less', './build/options'),
     buildLess('./changelog/style.less', './build/changelog'),
     buildLess('./src/css/fixtures/**/*.less', './build/fixtures'),
 );

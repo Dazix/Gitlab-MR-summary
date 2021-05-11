@@ -123,7 +123,7 @@ export default class StorageManagerObject {
             
             try {
                 await this.setByKey(urlKey, domainData);
-                resolve();
+                resolve(domainData);
             } catch (e) {
                 reject(e);
             }
